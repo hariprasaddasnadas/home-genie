@@ -36,3 +36,75 @@
     transform: rotate(360deg);
   }
 }
+
+/* --- HomeGenie Elite CSS --- */
+
+:root {
+  --genie-purple: #673AB7;
+  --genie-dark: #311B92;
+}
+
+/* 1. Hero Section Fixes */
+.hero-gradient {
+  background: linear-gradient(135deg, var(--genie-purple) 0%, var(--genie-dark) 100%);
+  border-radius: 0 0 60px 60px;
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  color: white;
+  padding: 60px 0;
+}
+
+/* Ensure the image doesn't fly away */
+.hero-image-container img {
+  border: 12px solid white;
+  border-radius: 40px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+  transform: rotate(3deg);
+  transition: 0.5s ease;
+}
+
+.hero-image-container:hover img {
+  transform: rotate(0deg) scale(1.02);
+}
+
+/* 2. Service Cards Styling */
+.service-tile {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.service-tile:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 25px 50px rgba(103, 58, 183, 0.1);
+  border-color: var(--genie-purple);
+}
+
+.service-img-wrapper {
+  height: 200px;
+  overflow: hidden;
+}
+
+.service-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 3. Button Styling */
+.btn-book {
+  background: #f8f9fa;
+  border: none;
+  font-weight: 700;
+  padding: 10px;
+  border-radius: 12px;
+  transition: 0.3s;
+}
+
+.service-tile:hover .btn-book {
+  background: var(--genie-purple);
+  color: white;
+}
