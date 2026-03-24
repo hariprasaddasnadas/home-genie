@@ -1,4 +1,5 @@
 import './App.css';
+import './Mycomponents/Mobile.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './Mycomponents/Header';
 import PartnerRegistration from './Mycomponents/PartnerRegistration';

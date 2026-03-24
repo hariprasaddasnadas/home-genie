@@ -1,139 +1,211 @@
 import React, { useState } from 'react';
 
+const benefitItems = [
+  {
+    icon: 'bi-wallet2',
+    title: 'Reliable weekly payouts',
+    description: 'Clear earnings, predictable settlement cycles, and support for payment queries.',
+  },
+  {
+    icon: 'bi-graph-up-arrow',
+    title: 'Consistent local demand',
+    description: 'Access repeat customers in your area without spending extra on marketing.',
+  },
+  {
+    icon: 'bi-mortarboard',
+    title: 'Operational guidance',
+    description: 'Get onboarding help, service standards, and training support to grow faster.',
+  },
+  {
+    icon: 'bi-headset',
+    title: 'Partner-first support',
+    description: 'Escalation help for jobs, schedules, and customer communication when needed.',
+  },
+];
+
 export default function PartnerRegistration() {
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     serviceCategory: 'Plumbing',
     pincode: '',
-    experience: '1-3 Years'
+    experience: '1-3 Years',
   });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData((current) => ({
+      ...current,
+      [name]: name === 'phone' || name === 'pincode' ? value.replace(/\D/g, '') : value,
+    }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("New Partner Lead:", formData);
-    alert("Genie Request Sent! Our team will contact you for verification.");
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    console.log('New Partner Lead:', formData);
+    alert('Application received. Our partner team will contact you shortly.');
   };
 
   return (
-    <div className="container-fluid min-vh-100 d-flex align-items-center bg-light py-5">
+    <section className="partner-section">
       <div className="container">
-        <div className="row g-5 align-items-center">
-          
-          {/* Left Side: Marketing/Benefits */}
-          <div className="col-lg-6">
-            <h1 className="display-4 fw-bold mb-4">
-              Become a <span style={{ color: '#673AB7' }}>HomeGenie</span> Partner
+        <div className="partner-layout">
+          <div className="partner-card">
+            <span className="partner-kicker">
+              <i className="bi bi-briefcase-fill"></i>
+              Grow with HomeGenie
+            </span>
+
+            <h1 className="partner-title">
+              Build a stronger service business with a trusted customer pipeline.
             </h1>
-            <p className="lead mb-5 text-secondary">
-              Join India's fastest-growing service network. Get consistent leads, 
-              timely payments, and grow your business with a magic touch.
+
+            <p className="partner-copy mt-3 mb-0">
+              Join a network designed for skilled professionals who want dependable leads,
+              efficient operations, and a brand customers already trust in their homes.
             </p>
 
-            <div className="d-flex mb-4">
-              <div className="bg-white p-3 rounded-circle shadow-sm me-3">
-                <i className="bi bi-wallet2 fs-3 text-success"></i>
+            <div className="partner-metrics">
+              <div className="partner-metric">
+                <strong>10k+</strong>
+                <span>monthly customer requests</span>
               </div>
-              <div>
-                <h5 className="fw-bold">Weekly Payouts</h5>
-                <p className="text-muted">Get your hard-earned money directly in your bank account every week.</p>
+              <div className="partner-metric">
+                <strong>48 hrs</strong>
+                <span>average onboarding review</span>
+              </div>
+              <div className="partner-metric">
+                <strong>20+</strong>
+                <span>active service categories</span>
               </div>
             </div>
 
-            <div className="d-flex mb-4">
-              <div className="bg-white p-3 rounded-circle shadow-sm me-3">
-                <i className="bi bi-graph-up-arrow fs-3 text-primary"></i>
-              </div>
-              <div>
-                <h5 className="fw-bold">Business Growth</h5>
-                <p className="text-muted">Access to 10,000+ customers looking for experts in your area.</p>
-              </div>
+            <div className="benefits-grid mt-4">
+              {benefitItems.map((item) => (
+                <article className="benefit-card" key={item.title}>
+                  <span className="icon-wrap">
+                    <i className={`bi ${item.icon}`}></i>
+                  </span>
+                  <h3>{item.title}</h3>
+                  <p className="mb-0">{item.description}</p>
+                </article>
+              ))}
             </div>
           </div>
 
-          {/* Right Side: The Registration Form */}
-          <div className="col-lg-5 offset-lg-1">
-            <div className="card border-0 shadow-lg p-4 p-md-5 rounded-4">
-              <h3 className="fw-bold mb-4">Start Earning Today</h3>
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold small">Full Name</label>
-                  <input 
-                    type="text" 
-                    className="form-control form-control-lg bg-light border-0" 
-                    name="fullName"
-                    placeholder="e.g. Rahul Sharma"
+          <div className="partner-card">
+            <h2 className="section-title fs-2 mb-2">Partner application</h2>
+            <p className="partner-note mb-4">
+              Fill in your details and our onboarding team will review your profile for the next
+              available service slots in your area.
+            </p>
+
+            <form className="partner-form" onSubmit={handleSubmit}>
+              <div className="mb-3">
+                <label className="form-label fw-semibold small" htmlFor="fullName">
+                  Full name
+                </label>
+                <input
+                  id="fullName"
+                  type="text"
+                  className="form-control"
+                  name="fullName"
+                  placeholder="Enter your full name"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label fw-semibold small" htmlFor="phone">
+                  Mobile number
+                </label>
+                <div className="input-group">
+                  <span className="input-group-text">+91</span>
+                  <input
+                    id="phone"
+                    type="tel"
+                    className="form-control"
+                    name="phone"
+                    placeholder="10-digit mobile number"
+                    maxLength="10"
+                    value={formData.phone}
                     onChange={handleChange}
-                    required 
+                    required
                   />
                 </div>
+              </div>
 
-                <div className="mb-3">
-                  <label className="form-label fw-semibold small">Phone Number</label>
-                  <div className="input-group">
-                    <span className="input-group-text bg-light border-0">+91</span>
-                    <input 
-                      type="tel" 
-                      className="form-control form-control-lg bg-light border-0" 
-                      name="phone"
-                      placeholder="10 digit mobile"
-                      onChange={handleChange}
-                      required 
-                    />
-                  </div>
-                </div>
-
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label fw-semibold small">Service Type</label>
-                    <select className="form-select form-select-lg bg-light border-0" name="serviceCategory" onChange={handleChange}>
-                      <option>Plumbing</option>
-                      <option>Electrician</option>
-                      <option>AC Repair</option>
-                      <option>Cleaning</option>
-                      <option>Salon</option>
-                    </select>
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label fw-semibold small">Base Pincode</label>
-                    <input 
-                      type="text" 
-                      className="form-control form-control-lg bg-light border-0" 
-                      name="pincode"
-                      placeholder="6-digit"
-                      maxLength="6"
-                      onChange={handleChange}
-                      required 
-                    />
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="form-label fw-semibold small">Years of Experience</label>
-                  <select className="form-select form-select-lg bg-light border-0" name="experience" onChange={handleChange}>
-                    <option>Less than 1 Year</option>
-                    <option>1-3 Years</option>
-                    <option>3-5 Years</option>
-                    <option>5+ Years</option>
+              <div className="row">
+                <div className="col-md-6 mb-3">
+                  <label className="form-label fw-semibold small" htmlFor="serviceCategory">
+                    Service category
+                  </label>
+                  <select
+                    id="serviceCategory"
+                    className="form-select"
+                    name="serviceCategory"
+                    value={formData.serviceCategory}
+                    onChange={handleChange}
+                  >
+                    <option>Plumbing</option>
+                    <option>Electrician</option>
+                    <option>AC Repair</option>
+                    <option>Cleaning</option>
+                    <option>Salon</option>
+                    <option>Carpentry</option>
                   </select>
                 </div>
 
-                <button type="submit" className="btn btn-lg w-100 text-white fw-bold shadow" style={{ backgroundColor: '#673AB7' }}>
-                  Register as Genie
-                </button>
-                <p className="text-center mt-3 text-muted small">
-                  By joining, you agree to HomeGenie's Partner Terms.
-                </p>
-              </form>
-            </div>
-          </div>
+                <div className="col-md-6 mb-3">
+                  <label className="form-label fw-semibold small" htmlFor="pincode">
+                    Base pincode
+                  </label>
+                  <input
+                    id="pincode"
+                    type="text"
+                    className="form-control"
+                    name="pincode"
+                    placeholder="6-digit service area"
+                    maxLength="6"
+                    value={formData.pincode}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </div>
 
+              <div className="mb-4">
+                <label className="form-label fw-semibold small" htmlFor="experience">
+                  Years of experience
+                </label>
+                <select
+                  id="experience"
+                  className="form-select"
+                  name="experience"
+                  value={formData.experience}
+                  onChange={handleChange}
+                >
+                  <option>Less than 1 Year</option>
+                  <option>1-3 Years</option>
+                  <option>3-5 Years</option>
+                  <option>5+ Years</option>
+                </select>
+              </div>
+
+              <button type="submit" className="partner-submit">
+                Submit application
+              </button>
+
+              <p className="partner-note text-center mt-3 mb-0 small">
+                By applying, you agree to HomeGenie partner onboarding and verification terms.
+              </p>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

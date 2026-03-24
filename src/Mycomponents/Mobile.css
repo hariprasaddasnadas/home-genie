@@ -1,0 +1,43 @@
+@media (max-width: 991px) {
+  .header-shell {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .header-actions {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 767px) {
+  .hg-header .container,
+  .hero-content,
+  .hero-media,
+  .partner-card {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .brand-lockup {
+    font-size: 1.25rem;
+  }
+
+  .brand-mark {
+    width: 2.45rem;
+    height: 2.45rem;
+  }
+
+  .btn-login,
+  .nav-link-custom,
+  .hero-btn,
+  .partner-submit,
+  .cta-primary {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .header-actions {
+    flex-direction: column;
+  }
+}
