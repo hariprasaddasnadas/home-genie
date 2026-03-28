@@ -89,7 +89,7 @@ export default function Home() {
                         <input
                           id="serviceNeed"
                           type="text"
-                          placeholder="Try AC servicing, sofa cleaning, salon..."
+                          placeholder="Try AC servicing, plumbing, electrician..."
                         />
                       </div>
 
@@ -133,20 +133,54 @@ export default function Home() {
               </div>
 
               <div className="col-lg-5">
-                <div className="hero-media">
-                  <div className="hero-media-card">
-                    <img
-                      src="https://images.pexels.com/photos/6195129/pexels-photo-6195129.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                      alt="Home professional helping a customer"
-                    />
-                    <div className="trust-card">
-                      <div>
-                        <strong>Trusted by modern households</strong>
-                        <span>Repairs, wellness, cleaning, and seasonal care</span>
+                <div className="hero-side-panel">
+                  <div className="hero-panel-card hero-panel-main">
+                    <span className="hero-panel-badge">Live Platform Features</span>
+                    <h3>Why HomeGenie feels different</h3>
+                    <p>
+                      Built for faster response, better transparency, and smarter service
+                      decisions for urgent and everyday home care.
+                    </p>
+                  </div>
+
+                  <div className="hero-feature-list">
+                    <div className="hero-feature-item">
+                      <div className="hero-feature-icon">
+                        <i className="bi bi-broadcast-pin"></i>
                       </div>
                       <div>
-                        <strong>98%</strong>
-                        <span>on-time arrival score</span>
+                        <h4>Real-Time Provider</h4>
+                        <p>See active nearby professionals before you confirm a booking.</p>
+                      </div>
+                    </div>
+
+                    <div className="hero-feature-item emergency-item">
+                      <div className="hero-feature-icon emergency">
+                        <i className="bi bi-exclamation-octagon-fill"></i>
+                      </div>
+                      <div>
+                        <h4>Emergency Mode</h4>
+                        <p>Priority matching for urgent electrical, plumbing, and AC issues.</p>
+                      </div>
+                    </div>
+
+                    <div className="hero-feature-item">
+                      <div className="hero-feature-icon">
+                        <i className="bi bi-geo-alt-fill"></i>
+                      </div>
+                      <div>
+                        <h4>Service Tracking</h4>
+                        <p>Track provider movement, arrival, and live job status updates.</p>
+                      </div>
+                    </div>
+
+                    <div className="hero-feature-item">
+                      <div className="hero-feature-icon">
+                        <i className="bi bi-award-fill"></i>
+                      </div>
+                      <div>
+                        <h4>Skill Rating</h4>
+                        <p>Choose experts using quality, punctuality, and work-score insights.</p>
                       </div>
                     </div>
                   </div>
@@ -156,7 +190,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       <section className="section-spacing">
         <div className="container">
           <div className="section-heading mb-4 mb-lg-5">

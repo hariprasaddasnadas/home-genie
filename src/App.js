@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './Mycomponents/Header';
 import PartnerRegistration from './Mycomponents/PartnerRegistration';
 import Home from './Mycomponents/Home'; 
+import Footer from './Mycomponents/Footer';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           {/* This line handles the Partner page */}
           <Route path="/partner" element={<PartnerRegistration />} />
         </Routes>
+        <Footer />
       </div>
     </Router>
   );
