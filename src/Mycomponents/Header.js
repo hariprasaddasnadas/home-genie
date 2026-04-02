@@ -20,7 +20,8 @@ export default function Header({ cartCount = 0 }) {
   };
 
   return (
-    <header className="hg-header sticky-top">
+    <>
+      <header className="hg-header sticky-top">
       <div className="container py-3">
         <div className="header-shell">
           <Link className="brand-lockup text-decoration-none" to="/">
@@ -91,5 +92,16 @@ export default function Header({ cartCount = 0 }) {
         </div>
       </div>
     </header>
+
+      {/* Mobile Sticky Bottom Bar */}
+      <div className="mobile-bottom-actions d-md-none">
+        <Link to="/partner" className="partner nav-link-custom text-decoration-none">
+          Partner with us
+        </Link>
+        <span className="book nav-link-custom text-decoration-none" style={{ cursor: 'pointer' }} onClick={handleBookServiceClick}>
+          Book a service
+        </span>
+      </div>
+    </>
   );
 }
