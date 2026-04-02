@@ -2,6 +2,7 @@
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(67, 35, 122, 0.08);
+  z-index: 1030 !important;
 }
 
 .header-shell {
@@ -39,7 +40,7 @@
 
 .search-wrapper {
   display: grid;
-  grid-template-columns: 0.8fr 1.4fr auto;
+  grid-template-columns: 0.4fr 1.6fr auto;
   gap: 0.75rem;
   align-items: center;
   padding: 0.65rem;
@@ -104,21 +105,38 @@
   border-radius: 16px;
   color: #5f6480;
   font-weight: 700;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.nav-link-custom:hover {
+.nav-link-custom:not(.book):hover {
   background: rgba(106, 56, 194, 0.08);
   color: #6a38c2;
+  transform: translateY(-2px);
+}
+
+.book {
+  background-color: #6a38c2;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(106, 56, 194, 0.15);
+}
+
+.book:hover {
+  background-color: #5a2eab;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(106, 56, 194, 0.3);
 }
 
 .btn-login {
   padding: 0.9rem 1.15rem;
   background: #14213d;
   color: #fff;
-  box-shadow: 0 16px 28px rgba(20, 33, 61, 0.16);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(20, 33, 61, 0.15);
 }
 
 .btn-login:hover {
   background: #1f335f;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(20, 33, 61, 0.3);
 }

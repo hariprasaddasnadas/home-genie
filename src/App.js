@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import './App.css';
 import './Mycomponents/Mobile.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -5,20 +6,71 @@ import Header from './Mycomponents/Header';
 import PartnerRegistration from './Mycomponents/PartnerRegistration';
 import Home from './Mycomponents/Home'; 
 import Footer from './Mycomponents/Footer';
+import Cart from './Mycomponents/Cart';
+import Checkout from './Mycomponents/Checkout';
 
 function App() {
+  const [cartItems, setCartItems] = useState([]);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: 'success' });
+    }, 3000);
+  };
+
+  const addToCart = (service) => {
+    const isAlreadyAdded = cartItems.some((item) => item.id === service.id);
+    if (isAlreadyAdded) {
+      showToast("You have already added this service in your cart!", "danger");
+    } else {
+      setCartItems((prevItems) => [...prevItems, service]);
+      showToast("Item added to the cart", "success");
+    }
+  };
+
+  const removeFromCart = (serviceId) => {
+    setCartItems((prevItems) => prevItems.filter((item) => item.id !== serviceId));
+  };
+
+  const clearCart = () => {
+    setCartItems([]);
+  };
+
   return (
     <Router>
       <div className="App">
-        <Header />
+        <Header cartCount={cartItems.length} />
         <Routes>
           {/* This line makes the Home component show on the main page */}
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Home addToCart={addToCart} />} />
+          
+          {/* This line handles the Cart page */}
+          <Route path="/cart" element={<Cart cartItems={cartItems} removeFromCart={removeFromCart} />} />
+          
+          {/* This line handles the Checkout page */}
+          <Route path="/checkout" element={<Checkout cartItems={cartItems} clearCart={clearCart} showToast={showToast} />} />
           
           {/* This line handles the Partner page */}
           <Route path="/partner" element={<PartnerRegistration />} />
         </Routes>
         <Footer />
+        
+        {/* Toast Notification */}
+        {toast.show && (
+          <div className="position-fixed bottom-0 end-0 p-4" style={{ zIndex: 1050 }}>
+            <div className={`toast show align-items-center text-bg-${toast.type} border-0 rounded-4 shadow-lg`} role="alert" aria-live="assertive" aria-atomic="true">
+              <div className="d-flex">
+                <div className="toast-body fw-semibold px-4 py-3">
+                  <i className={`bi ${toast.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'} me-2`}></i>
+                  {toast.message}
+                </div>
+                <button type="button" className="btn-close btn-close-white me-3 m-auto" onClick={() => setToast({ show: false, message: '', type: 'success' })} aria-label="Close"></button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Router>
   );

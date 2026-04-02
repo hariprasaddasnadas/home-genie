@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const services = [
   {
@@ -58,7 +58,8 @@ const highlights = [
   },
 ];
 
-export default function Home() {
+export default function Home({ addToCart }) {
+  const navigate = useNavigate();
   return (
     <main>
       <section className="hero-section">
@@ -215,7 +216,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-spacing pt-0">
+      <section className="section-spacing pt-0" id="services-section">
         <div className="container">
           <div className="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3 mb-4 mb-lg-5">
             <div className="section-heading mb-0">
@@ -244,9 +245,14 @@ export default function Home() {
                   </div>
                   <h3>{service.name}</h3>
                   <p>{service.description}</p>
-                  <button type="button" className="btn-book">
-                    Book now
-                  </button>
+                  <div className="d-flex flex-column gap-2 mt-auto">
+                    <button type="button" className="btn-cart" onClick={() => addToCart(service)}>
+                      Add to cart
+                    </button>
+                    <button type="button" className="btn-book" onClick={() => navigate('/checkout', { state: { service } })}>
+                      Book now
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
