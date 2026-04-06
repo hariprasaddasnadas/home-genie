@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 import './Mycomponents/Mobile.css';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -12,6 +12,21 @@ import Checkout from './Mycomponents/Checkout';
 function App() {
   const [cartItems, setCartItems] = useState([]);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    return localStorage.getItem('hg-theme') === 'dark';
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.body.classList.add('dark-mode');
+      localStorage.setItem('hg-theme', 'dark');
+    } else {
+      document.body.classList.remove('dark-mode');
+      localStorage.setItem('hg-theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
@@ -40,8 +55,8 @@ function App() {
 
   return (
     <Router>
-      <div className="App">
-        <Header cartCount={cartItems.length} />
+      <div className={`App ${isDarkMode ? 'dark-mode-active' : ''}`}>
+        <Header cartCount={cartItems.length} addToCart={addToCart} isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
         <Routes>
           {/* This line makes the Home component show on the main page */}
           <Route path="/" element={<Home addToCart={addToCart} />} />

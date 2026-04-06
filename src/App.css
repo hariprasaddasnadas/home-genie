@@ -146,6 +146,28 @@
   box-shadow: 0 18px 32px rgba(245, 158, 11, 0.32);
 }
 
+.hero-search-dropdown {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .hero-search-dropdown {
+    width: 32rem;
+  }
+
+  .hero-btn{
+    height: 100px;
+  }
+}
+
+@media (min-width: 397px) {
+  .hero-btn {
+    height: 50px;
+  }
+}
+
+
+
 .hero-meta {
   display: flex;
   flex-wrap: wrap;
@@ -929,4 +951,207 @@
   }
 }
 
+/* ==========================================================================
+   Dark Mode Overrides
+   ========================================================================== */
 
+body.dark-mode {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #f8fafc;
+}
+
+body.dark-mode .App {
+  background: transparent;
+  color: #f8fafc;
+}
+
+body.dark-mode .cart-page, body.dark-mode .checkout-page {
+  background: transparent !important;
+}
+
+/* Update section backgrounds */
+body.dark-mode .section-card,
+body.dark-mode .service-card,
+body.dark-mode .partner-card,
+body.dark-mode .smart-feature-card,
+body.dark-mode .hero-search-dropdown,
+body.dark-mode .benefit-card {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .service-card-body {
+  background: #1e293b;
+}
+
+body.dark-mode .section-title,
+body.dark-mode .section-subtitle,
+body.dark-mode .section-card h3,
+body.dark-mode .section-card p,
+body.dark-mode .service-card h3,
+body.dark-mode .service-card p,
+body.dark-mode .partner-title,
+body.dark-mode .partner-copy,
+body.dark-mode .smart-feature-card h3,
+body.dark-mode .smart-feature-card p,
+body.dark-mode .brand-lockup,
+body.dark-mode .benefit-card h3,
+body.dark-mode .benefit-card p,
+body.dark-mode .partner-metric span,
+body.dark-mode .partner-note,
+body.dark-mode .form-label {
+  color: #f8fafc !important;
+}
+
+body.dark-mode .partner-form .form-control,
+body.dark-mode .partner-form .form-select,
+body.dark-mode .partner-form .input-group-text,
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+  background: #334155;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+body.dark-mode .partner-form .form-control::placeholder,
+body.dark-mode .form-control::placeholder {
+  color: #94a3b8;
+}
+
+body.dark-mode .service-rating {
+  color: #f8fafc;
+}
+
+/* Adjust secondary texts */
+body.dark-mode .text-muted, 
+body.dark-mode .service-card p,
+body.dark-mode .section-subtitle,
+body.dark-mode .hero-copy {
+  color: #cbd5e1 !important;
+}
+
+/* Adjust buttons that might have white backgrounds */
+body.dark-mode .btn-book {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #a78bfa;
+}
+body.dark-mode .btn-book:hover {
+  background-color: #6a38c2;
+  color: #fff;
+}
+body.dark-mode .btn-cart {
+  color: #a78bfa;
+  border-color: rgba(167, 139, 250, 0.4);
+}
+body.dark-mode .btn-cart:hover {
+  background-color: rgba(167, 139, 250, 0.15);
+}
+
+/* Hero Section fixes */
+body.dark-mode .hero-field {
+  background: #334155 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-mode .hero-field input {
+  color: #f8fafc !important;
+}
+body.dark-mode .hero-field input::placeholder {
+  color: #94a3b8 !important;
+}
+body.dark-mode .hero-field label {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .hero-search-card {
+  background: rgba(15, 23, 42, 0.6) !important;
+}
+
+/* Partner section */
+body.dark-mode .partner-section {
+  background: transparent;
+}
+body.dark-mode .partner-features li {
+  color: #e2e8f0;
+}
+
+/* Mobile search tweaks */
+body.dark-mode .search-dropdown,
+body.dark-mode .hero-search-dropdown {
+  background: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-mode .search-result-item {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-mode .search-result-item h6 {
+  color: #f8fafc;
+}
+body.dark-mode .card.shadow-sm {
+  background-color: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-mode .card.shadow-sm h2, body.dark-mode .card.shadow-sm h4, body.dark-mode .card.shadow-sm p, body.dark-mode .card.shadow-sm h5 {
+  color: #f8fafc !important;
+}
+body.dark-mode .order-summary-card {
+  background-color: #1e293b !important;
+}
+
+/* ==========================================================================
+   Dark Mode: Cart & Checkout Overrides
+   ========================================================================== */
+
+/* Background Overrides */
+body.dark-mode .cart-page-container .bg-white,
+body.dark-mode .bg-white {
+  background-color: #1e293b !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode .bg-light {
+  background-color: #334155 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Typography Overrides */
+body.dark-mode h2[style],
+body.dark-mode h4.text-dark,
+body.dark-mode h5.text-dark,
+body.dark-mode span.text-dark,
+body.dark-mode .text-dark {
+  color: #f8fafc !important;
+}
+
+/* Icon buttons (like Trash cart remove) */
+body.dark-mode .btn-light {
+  background-color: #334155 !important;
+  color: #f87171 !important;
+}
+
+body.dark-mode .btn-light:hover {
+  background-color: #475569 !important;
+}
+
+/* Radio buttons & labels */
+body.dark-mode .form-check-input {
+  background-color: #334155;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+body.dark-mode .form-check-input:checked {
+  background-color: #a78bfa;
+  border-color: #a78bfa;
+}
+
+body.dark-mode label.text-muted {
+  color: #cbd5e1 !important;
+}
+
+body.dark-mode .cart-page-container h2 {
+  color: #f8fafc !important;
+}
+
+body.dark-mode h2[style="color: #14213d;"] {
+  color: #f8fafc !important;
+}

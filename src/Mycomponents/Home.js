@@ -1,44 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { services } from '../data';
 
-const services = [
-  {
-    id: 1,
-    name: 'AC Deep Cleaning',
-    price: '599',
-    rating: '4.8',
-    description: 'Jet-cleaned coils, filter wash, airflow check, and indoor unit hygiene.',
-    image:
-      'https://images.pexels.com/photos/9242831/pexels-photo-9242831.jpeg?auto=compress&cs=tinysrgb&w=800',
-  },
-  {
-    id: 2,
-    name: 'Home Sanitization',
-    price: '1499',
-    rating: '4.9',
-    description: 'Whole-home disinfection for kitchens, bedrooms, high-touch points, and surfaces.',
-    image:
-      'https://images.pexels.com/photos/4099467/pexels-photo-4099467.jpeg?auto=compress&cs=tinysrgb&w=800',
-  },
-  {
-    id: 3,
-    name: 'Salon at Home',
-    price: '899',
-    rating: '4.7',
-    description: 'Professional beauty services with premium products and hygienic setup.',
-    image:
-      'https://images.pexels.com/photos/3993311/pexels-photo-3993311.jpeg?auto=compress&cs=tinysrgb&w=800',
-  },
-  {
-    id: 4,
-    name: 'Expert Electrician',
-    price: '149',
-    rating: '4.8',
-    description: 'Quick fixes, safe diagnostics, fittings, switches, fans, and smart upgrades.',
-    image:
-      'https://images.pexels.com/photos/257736/pexels-photo-257736.jpeg?auto=compress&cs=tinysrgb&w=800',
-  },
-];
 
 const highlights = [
   {
@@ -60,6 +23,25 @@ const highlights = [
 
 export default function Home({ addToCart }) {
   const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    const handleOtherSearch = () => setQuery('');
+    window.addEventListener('headerSearchActive', handleOtherSearch);
+    return () => window.removeEventListener('headerSearchActive', handleOtherSearch);
+  }, []);
+
+  const filteredServices = query
+    ? services.filter((service) => {
+        const searchTerm = query.toLowerCase();
+        return (
+          service.name.toLowerCase().includes(searchTerm) ||
+          service.description.toLowerCase().includes(searchTerm) ||
+          service.keywords?.some((kw) => kw.toLowerCase().includes(searchTerm))
+        );
+      })
+    : [];
+
   return (
     <main>
       <section className="hero-section">
@@ -85,13 +67,45 @@ export default function Home({ addToCart }) {
 
                   <div className="hero-search-card">
                     <div className="hero-search-grid">
-                      <div className="hero-field">
+                      <div className="hero-field position-relative" style={{ zIndex: 10 }}>
                         <label htmlFor="serviceNeed">What do you need?</label>
                         <input
                           id="serviceNeed"
                           type="text"
                           placeholder="Try AC servicing, plumbing, electrician..."
+                          value={query}
+                          onChange={(e) => {
+                            setQuery(e.target.value);
+                            window.dispatchEvent(new CustomEvent('homeSearchActive'));
+                          }}
+                          onFocus={() => window.dispatchEvent(new CustomEvent('homeSearchActive'))}
+                          autoComplete="off"
                         />
+                        {query && (
+                          <div className="search-dropdown shadow rounded-4 p-3 bg-white position-absolute mt-2 top-100 start-0 border hero-search-dropdown" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                            {filteredServices.length > 0 ? (
+                              <div className="d-flex flex-column gap-3">
+                                {filteredServices.map(service => (
+                                  <div key={service.id} className="search-result-item d-flex align-items-center justify-content-between border-bottom pb-2">
+                                    <div className="d-flex align-items-center gap-2 gap-md-3">
+                                      <img src={service.image} alt={service.name} className="rounded d-none d-sm-block" style={{ width: '48px', height: '48px', objectFit: 'cover' }} />
+                                      <div>
+                                        <h6 className="mb-0 fw-bold text-dark" style={{ fontSize: '0.95rem' }}>{service.name}</h6>
+                                        <small className="text-muted">Rs. {service.price}</small>
+                                      </div>
+                                    </div>
+                                    <div className="d-flex flex-column flex-sm-row gap-2">
+                                      <button type="button" className="btn btn-sm btn-outline-primary rounded-pill px-2 px-sm-3" style={{ fontSize: '0.8rem' }} onClick={() => { addToCart && addToCart(service); setQuery(''); }}>Add to cart</button>
+                                      <button type="button" className="btn btn-sm btn-primary rounded-pill px-2 px-sm-3" style={{ backgroundColor: '#6a38c2', borderColor: '#6a38c2', fontSize: '0.8rem' }} onClick={() => { navigate('/checkout', { state: { service } }); setQuery(''); }}>Book now</button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center text-muted py-3">No services found for "{query}"</div>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="hero-field">

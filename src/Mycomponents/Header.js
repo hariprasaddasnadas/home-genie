@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import './navbar.css';
+import { services } from '../data';
 
-export default function Header({ cartCount = 0 }) {
+export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleTheme }) {
   const [pincode, setPincode] = useState('');
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const handleOtherSearch = () => setQuery('');
+    window.addEventListener('homeSearchActive', handleOtherSearch);
+    return () => window.removeEventListener('homeSearchActive', handleOtherSearch);
+  }, []);
 
   const handleBookServiceClick = () => {
     if (location.pathname !== '/') {
@@ -18,6 +25,17 @@ export default function Header({ cartCount = 0 }) {
       document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  const filteredServices = query
+    ? services.filter((service) => {
+        const searchTerm = query.toLowerCase();
+        return (
+          service.name.toLowerCase().includes(searchTerm) ||
+          service.description.toLowerCase().includes(searchTerm) ||
+          service.keywords?.some((kw) => kw.toLowerCase().includes(searchTerm))
+        );
+      })
+    : [];
 
   return (
     <>
@@ -33,7 +51,7 @@ export default function Header({ cartCount = 0 }) {
             </span>
           </Link>
 
-          <div className="search-wrapper d-none d-lg-flex" role="search" aria-label="Site search">
+          <div className="search-wrapper d-none d-lg-flex position-relative" role="search" aria-label="Site search">
             <div className="search-field search-field--compact d-flex align-items-center gap-2">
               <i className="bi bi-geo-alt fs-5 text-muted"></i>
               <div className="flex-grow-1">
@@ -58,7 +76,12 @@ export default function Header({ cartCount = 0 }) {
                   type="text"
                   placeholder="AC repair, home cleaning..."
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    window.dispatchEvent(new CustomEvent('headerSearchActive'));
+                  }}
+                  onFocus={() => window.dispatchEvent(new CustomEvent('headerSearchActive'))}
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -66,9 +89,53 @@ export default function Header({ cartCount = 0 }) {
             <button type="button" className="search-action" aria-label="Search services">
               <i className="bi bi-search"></i>
             </button>
+
+            {query && (
+              <div className="search-dropdown shadow rounded-4 p-3 bg-white position-absolute w-100 mt-2 top-100 start-0 border" style={{ zIndex: 1050, maxHeight: '400px', overflowY: 'auto' }}>
+                {filteredServices.length > 0 ? (
+                  <div className="d-flex flex-column gap-3">
+                    {filteredServices.map(service => (
+                      <div key={service.id} className="search-result-item d-flex align-items-center justify-content-between border-bottom pb-2">
+                        <div className="d-flex align-items-center gap-3">
+                          <img src={service.image} alt={service.name} className="rounded" style={{ width: '48px', height: '48px', objectFit: 'cover' }} />
+                          <div>
+                            <h6 className="mb-0 fw-bold">{service.name}</h6>
+                            <small className="text-muted">Rs. {service.price}</small>
+                          </div>
+                        </div>
+                        <div className="d-flex gap-2">
+                          <button type="button" className="btn btn-sm btn-outline-primary rounded-pill px-3" onClick={() => { addToCart && addToCart(service); setQuery(''); }}>Add to cart</button>
+                          <button type="button" className="btn btn-sm btn-primary rounded-pill px-3" style={{ backgroundColor: '#6a38c2', borderColor: '#6a38c2' }} onClick={() => { navigate('/checkout', { state: { service } }); setQuery(''); }}>Book now</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted py-3">No services found for "{query}"</div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="header-actions align-items-center">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="theme-toggle-btn border-0 d-flex align-items-center justify-content-center me-1"
+              aria-label="Toggle Dark Mode"
+              style={{ 
+                width: '42px', height: '42px', borderRadius: '50%', 
+                background: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(106, 56, 194, 0.08)',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {isDarkMode ? (
+                <i className="bi bi-sun-fill text-warning fs-5"></i>
+              ) : (
+                <i className="bi bi-moon-fill fs-5" style={{ color: '#6a38c2' }}></i>
+              )}
+            </button>
+
             <Link to="/partner" className="partner nav-link-custom text-decoration-none d-none d-md-inline-block">
               Partner with us
             </Link>
