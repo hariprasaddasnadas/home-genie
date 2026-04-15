@@ -6,6 +6,7 @@ import { services } from '../data';
 export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleTheme }) {
   const [pincode, setPincode] = useState('');
   const [query, setQuery] = useState('');
+  const [isLoginMenuOpen, setIsLoginMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -13,6 +14,14 @@ export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleThe
     window.addEventListener('homeSearchActive', handleOtherSearch);
     return () => window.removeEventListener('homeSearchActive', handleOtherSearch);
   }, []);
+
+  useEffect(() => {
+    const handleDocumentClick = () => setIsLoginMenuOpen(false);
+    if (isLoginMenuOpen) {
+      document.addEventListener('click', handleDocumentClick);
+    }
+    return () => document.removeEventListener('click', handleDocumentClick);
+  }, [isLoginMenuOpen]);
 
   const filteredServices = query
     ? services.filter((service) => {
@@ -123,9 +132,6 @@ export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleThe
                 <i className="bi bi-moon-fill fs-5" style={{ color: '#6a38c2' }}></i>
               )}
             </button>
-            <Link to="/partner" className="partner nav-link-custom text-decoration-none d-none d-md-inline-block">
-              Partner with us
-            </Link>
 
             <Link to="/cart" className="cart-wrapper text-decoration-none text-dark position-relative mx-3 d-flex align-items-center">
               <i className="bi bi-cart3 fs-4" style={{ color: '#14213d' }}></i>
@@ -135,20 +141,59 @@ export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleThe
               </span>
             </Link>
 
-            <button type="button" className="btn-login ms-1 border-0 rounded-4">
-              Login
-            </button>
+            <div className="login-menu-wrapper ms-1">
+              <button
+                type="button"
+                className="btn-login border-0 rounded-4 d-inline-flex align-items-center gap-2"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsLoginMenuOpen((prev) => !prev);
+                }}
+                aria-expanded={isLoginMenuOpen}
+                aria-haspopup="menu"
+              >
+                Login
+                <i className={`bi ${isLoginMenuOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
+              </button>
+
+              {isLoginMenuOpen && (
+                <div
+                  className="login-menu-dropdown"
+                  role="menu"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className="login-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsLoginMenuOpen(false);
+                      navigate('/login');
+                    }}
+                  >
+                    <i className="bi bi-person-circle"></i>
+                    User login
+                  </button>
+                  <button
+                    type="button"
+                    className="login-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsLoginMenuOpen(false);
+                      navigate('/partner');
+                    }}
+                  >
+                    <i className="bi bi-briefcase"></i>
+                    Become partner
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
     </header>
 
-      {/* Mobile Sticky Bottom Bar */}
-      <div className="mobile-bottom-actions d-md-none">
-        <Link to="/partner" className="partner nav-link-custom text-decoration-none">
-          Partner with us
-        </Link>
-      </div>
     </>
   );
 }

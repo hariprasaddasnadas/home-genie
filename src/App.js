@@ -13,6 +13,7 @@ import Contact from './Mycomponents/Contact';
 import FAQ from './Mycomponents/FAQ';
 import Services from './Mycomponents/Services';
 import EmergencyMode from './Mycomponents/EmergencyMode';
+import UserLogin from './Mycomponents/UserLogin';
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
@@ -71,6 +72,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/emergency" element={<EmergencyMode addToCart={addToCart} />} />
+          <Route path="/login" element={<UserLogin />} />
           <Route path="/partner" element={<PartnerRegistration />} />
         </Routes>
         <Footer />

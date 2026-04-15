@@ -1391,8 +1391,174 @@
   box-shadow: 0 12px 30px rgba(20, 33, 61, 0.25);
 }
 
+.login-page {
+  padding: 2.25rem 0 4.5rem;
+}
+
+.login-section {
+  padding: 1rem 0;
+}
+
+.login-layout {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 2rem;
+  align-items: stretch;
+}
+
+.login-intro-card,
+.login-form-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(67, 35, 122, 0.1);
+  border-radius: 2rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+}
+
+.login-intro-card {
+  padding: 2.4rem;
+  background:
+    radial-gradient(circle at top right, rgba(159, 103, 255, 0.2), transparent 28%),
+    linear-gradient(180deg, #ffffff, #faf7ff);
+}
+
+.login-form-card {
+  padding: 2.2rem;
+}
+
+.login-title {
+  margin: 0;
+  color: #1a2a52;
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.login-copy {
+  margin-top: 1rem;
+  color: #667085;
+  font-size: 1.02rem;
+  line-height: 1.75;
+  max-width: 34rem;
+}
+
+.login-feature-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.8rem;
+}
+
+.login-feature-item {
+  display: flex;
+  gap: 0.95rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(67, 35, 122, 0.08);
+}
+
+.login-feature-icon {
+  width: 3rem;
+  height: 3rem;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(106, 56, 194, 0.14), rgba(159, 103, 255, 0.24));
+  color: #6a38c2;
+  font-size: 1.2rem;
+}
+
+.login-feature-item h3 {
+  margin: 0 0 0.35rem;
+  color: #1f2f58;
+  font-size: 1rem;
+}
+
+.login-feature-item p {
+  margin: 0;
+  color: #667085;
+  line-height: 1.6;
+}
+
+.login-side-note,
+.login-footer-copy {
+  margin-top: 1.5rem;
+  color: #667085;
+  line-height: 1.6;
+}
+
+.login-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(106, 56, 194, 0.08);
+  color: #6a38c2;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.login-form .form-control {
+  min-height: 3.2rem;
+  border-radius: 14px;
+  border: 1px solid #e4e7ef;
+  background: #fbfbfc;
+  padding: 0.9rem 1rem;
+}
+
+.login-form .form-control:focus {
+  border-color: #6a38c2;
+  box-shadow: 0 0 0 4px rgba(106, 56, 194, 0.1);
+  background: #fff;
+}
+
+.login-form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.4rem;
+}
+
+.remember-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #596273;
+  font-weight: 600;
+}
+
+.login-inline-link {
+  color: #6a38c2;
+  font-weight: 700;
+}
+
+.login-submit-btn {
+  width: 100%;
+  min-height: 3.3rem;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #14213d, #263b6d);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(20, 33, 61, 0.18);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.login-submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(20, 33, 61, 0.24);
+}
+
 @media (max-width: 991px) {
   .partner-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .login-layout {
     grid-template-columns: 1fr;
   }
 }
@@ -1400,6 +1566,16 @@
 @media (max-width: 767px) {
   .partner-card {
     padding: 1.8rem;
+  }
+
+  .login-intro-card,
+  .login-form-card {
+    padding: 1.5rem;
+  }
+
+  .login-form-row {
+    flex-direction: column;
+    align-items: flex-start;
   }
   .benefits-grid, .partner-metrics {
     grid-template-columns: 1fr;
@@ -1467,6 +1643,37 @@ body.dark-mode .form-select {
   background: #334155;
   border-color: rgba(255, 255, 255, 0.1);
   color: #f8fafc;
+}
+
+body.dark-mode .login-intro-card,
+body.dark-mode .login-form-card,
+body.dark-mode .login-feature-item {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .login-title,
+body.dark-mode .login-feature-item h3,
+body.dark-mode .login-side-note,
+body.dark-mode .login-footer-copy,
+body.dark-mode .remember-check {
+  color: #f8fafc;
+}
+
+body.dark-mode .login-copy,
+body.dark-mode .login-feature-item p {
+  color: #cbd5e1;
+}
+
+body.dark-mode .login-form .form-control {
+  background: #334155;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+body.dark-mode .login-form .form-control::placeholder {
+  color: #94a3b8;
 }
 
 body.dark-mode .partner-form .form-control::placeholder,
