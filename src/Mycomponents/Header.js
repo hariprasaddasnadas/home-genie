@@ -3,8 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import './navbar.css';
 import { services } from '../data';
 
-export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleTheme }) {
-  const [pincode, setPincode] = useState('');
+export default function Header({
+  cartCount = 0,
+  addToCart,
+  isDarkMode,
+  toggleTheme,
+  currentPincode,
+  setCurrentPincode,
+}) {
   const [query, setQuery] = useState('');
   const [isLoginMenuOpen, setIsLoginMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -59,8 +65,8 @@ export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleThe
                   inputMode="numeric"
                   placeholder="Enter pincode"
                   maxLength="6"
-                  value={pincode}
-                  onChange={(event) => setPincode(event.target.value.replace(/\D/g, ''))}
+                  value={currentPincode}
+                  onChange={(event) => setCurrentPincode(event.target.value.replace(/\D/g, ''))}
                 />
               </div>
             </div>
@@ -83,7 +89,22 @@ export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleThe
               </div>
             </div>
 
-            <button type="button" className="search-action" aria-label="Search services">
+            <button
+              type="button"
+              className="search-action"
+              aria-label="Search services"
+              onClick={() => {
+                const params = new URLSearchParams();
+                if (query.trim()) {
+                  params.set('search', query.trim());
+                }
+                if (currentPincode) {
+                  params.set('pincode', currentPincode);
+                }
+                navigate(`/services${params.toString() ? `?${params.toString()}` : ''}`);
+                setQuery('');
+              }}
+            >
               <i className="bi bi-search"></i>
             </button>
 
@@ -102,7 +123,7 @@ export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleThe
                         </div>
                         <div className="d-flex gap-2">
                           <button type="button" className="btn btn-sm btn-outline-primary rounded-pill px-3" onClick={() => { addToCart && addToCart(service); setQuery(''); }}>Add to cart</button>
-                          <button type="button" className="btn btn-sm btn-primary rounded-pill px-3" style={{ backgroundColor: '#6a38c2', borderColor: '#6a38c2' }} onClick={() => { navigate('/checkout', { state: { service } }); setQuery(''); }}>Book now</button>
+                          <button type="button" className="btn btn-sm btn-primary rounded-pill px-3" style={{ backgroundColor: '#6a38c2', borderColor: '#6a38c2' }} onClick={() => { navigate('/services?service=' + service.slug + (currentPincode ? '&pincode=' + currentPincode : '')); setQuery(''); }}>View in area</button>
                         </div>
                       </div>
                     ))}

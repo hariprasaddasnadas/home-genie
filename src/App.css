@@ -462,6 +462,17 @@
   line-height: 1.6;
 }
 
+.service-filter-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  background: rgba(106, 56, 194, 0.08);
+  color: #6a38c2;
+  font-weight: 700;
+}
+
 .inner-page {
   padding: 2rem 0 4.5rem;
 }
@@ -1683,6 +1694,11 @@ body.dark-mode .form-control::placeholder {
 
 body.dark-mode .service-rating {
   color: #f8fafc;
+}
+
+body.dark-mode .service-filter-note {
+  background: rgba(167, 139, 250, 0.12);
+  color: #c4b5fd;
 }
 
 /* Adjust secondary texts */

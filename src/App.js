@@ -18,6 +18,7 @@ import UserLogin from './Mycomponents/UserLogin';
 function App() {
   const [cartItems, setCartItems] = useState([]);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [currentPincode, setCurrentPincode] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('hg-theme') === 'dark';
   });
@@ -62,16 +63,35 @@ function App() {
   return (
     <Router>
       <div className={`App ${isDarkMode ? 'dark-mode-active' : ''}`}>
-        <Header cartCount={cartItems.length} addToCart={addToCart} isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
+        <Header
+          cartCount={cartItems.length}
+          addToCart={addToCart}
+          isDarkMode={isDarkMode}
+          toggleTheme={toggleTheme}
+          currentPincode={currentPincode}
+          setCurrentPincode={setCurrentPincode}
+        />
         <Routes>
-          <Route path="/" element={<Home addToCart={addToCart} />} />
+          <Route
+            path="/"
+            element={
+              <Home
+                addToCart={addToCart}
+                currentPincode={currentPincode}
+                setCurrentPincode={setCurrentPincode}
+              />
+            }
+          />
           <Route path="/cart" element={<Cart cartItems={cartItems} removeFromCart={removeFromCart} />} />
           <Route path="/checkout" element={<Checkout cartItems={cartItems} clearCart={clearCart} showToast={showToast} />} />
           <Route path="/about" element={<About />} />
-          <Route path="/services" element={<Services />} />
+          <Route path="/services" element={<Services currentPincode={currentPincode} />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route path="/emergency" element={<EmergencyMode addToCart={addToCart} />} />
+          <Route
+            path="/emergency"
+            element={<EmergencyMode addToCart={addToCart} currentPincode={currentPincode} />}
+          />
           <Route path="/login" element={<UserLogin />} />
           <Route path="/partner" element={<PartnerRegistration />} />
         </Routes>

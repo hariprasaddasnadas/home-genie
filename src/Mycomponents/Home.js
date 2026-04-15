@@ -20,7 +20,7 @@ const highlights = [
   },
 ];
 
-export default function Home({ addToCart }) {
+export default function Home({ addToCart, currentPincode, setCurrentPincode }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
 
@@ -95,7 +95,7 @@ export default function Home({ addToCart }) {
                                     </div>
                                     <div className="d-flex flex-column flex-sm-row gap-2">
                                       <button type="button" className="btn btn-sm btn-outline-primary rounded-pill px-2 px-sm-3" style={{ fontSize: '0.8rem' }} onClick={() => { addToCart && addToCart(service); setQuery(''); }}>Add to cart</button>
-                                      <button type="button" className="btn btn-sm btn-primary rounded-pill px-2 px-sm-3" style={{ backgroundColor: '#6a38c2', borderColor: '#6a38c2', fontSize: '0.8rem' }} onClick={() => { navigate('/checkout', { state: { service } }); setQuery(''); }}>Book now</button>
+                                      <button type="button" className="btn btn-sm btn-primary rounded-pill px-2 px-sm-3" style={{ backgroundColor: '#6a38c2', borderColor: '#6a38c2', fontSize: '0.8rem' }} onClick={() => { navigate('/services?service=' + service.slug + (currentPincode ? '&pincode=' + currentPincode : '')); setQuery(''); }}>View in area</button>
                                     </div>
                                   </div>
                                 ))}
@@ -109,10 +109,30 @@ export default function Home({ addToCart }) {
 
                       <div className="hero-field">
                         <label htmlFor="areaPincode">Your area</label>
-                        <input id="areaPincode" type="text" placeholder="6-digit pincode" />
+                        <input
+                          id="areaPincode"
+                          type="text"
+                          placeholder="6-digit pincode"
+                          maxLength="6"
+                          value={currentPincode}
+                          onChange={(event) => setCurrentPincode(event.target.value.replace(/\D/g, ''))}
+                        />
                       </div>
 
-                      <button type="button" className="hero-btn">
+                      <button
+                        type="button"
+                        className="hero-btn"
+                        onClick={() => {
+                          const params = new URLSearchParams();
+                          if (query.trim()) {
+                            params.set('search', query.trim());
+                          }
+                          if (currentPincode) {
+                            params.set('pincode', currentPincode);
+                          }
+                          navigate(`/services${params.toString() ? `?${params.toString()}` : ''}`);
+                        }}
+                      >
                         Search
                       </button>
                     </div>
@@ -239,7 +259,7 @@ export default function Home({ addToCart }) {
                 Explore curated home services designed for speed, quality, and peace of mind.
               </p>
             </div>
-            <Link to="/services" className="text-decoration-none fw-semibold">
+            <Link to={currentPincode ? `/services?pincode=${currentPincode}` : '/services'} className="text-decoration-none fw-semibold">
               View all services <i className="bi bi-arrow-right-short"></i>
             </Link>
           </div>
@@ -247,7 +267,7 @@ export default function Home({ addToCart }) {
           <div className="services-grid">
             {services.map((service) => (
               <article className="service-card" key={service.id}>
-                <Link to="/services" className="text-decoration-none">
+                <Link to={`/services?service=${service.slug}${currentPincode ? `&pincode=${currentPincode}` : ''}`} className="text-decoration-none">
                   <img src={service.image} alt={service.name} />
                 </Link>
                 <div className="service-card-body">
@@ -264,8 +284,8 @@ export default function Home({ addToCart }) {
                     <button type="button" className="btn-cart" onClick={() => addToCart(service)}>
                       Add to cart
                     </button>
-                    <button type="button" className="btn-book" onClick={() => navigate('/checkout', { state: { service } })}>
-                      Book now
+                    <button type="button" className="btn-book" onClick={() => navigate(`/services?service=${service.slug}${currentPincode ? `&pincode=${currentPincode}` : ''}`)}>
+                      View in area
                     </button>
                   </div>
                 </div>

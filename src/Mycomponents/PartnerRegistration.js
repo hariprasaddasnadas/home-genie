@@ -25,7 +25,8 @@ const benefitItems = [
 
 export default function PartnerRegistration() {
   const [formData, setFormData] = useState({
-    fullName: '',
+    partnerName: '',
+    email: '',
     phone: '',
     serviceCategory: 'Plumbing',
     pincode: '',
@@ -103,16 +104,32 @@ export default function PartnerRegistration() {
 
             <form className="partner-form" onSubmit={handleSubmit}>
               <div className="mb-3">
-                <label className="form-label fw-semibold small" htmlFor="fullName">
-                  Full name
+                <label className="form-label fw-semibold small" htmlFor="partnerName">
+                  Person name or shop name
                 </label>
                 <input
-                  id="fullName"
+                  id="partnerName"
                   type="text"
                   className="form-control"
-                  name="fullName"
-                  placeholder="Enter your full name"
-                  value={formData.fullName}
+                  name="partnerName"
+                  placeholder="Enter person name or shop name"
+                  value={formData.partnerName}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label fw-semibold small" htmlFor="email">
+                  Email address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  className="form-control"
+                  name="email"
+                  placeholder="Enter your email"
+                  value={formData.email}
                   onChange={handleChange}
                   required
                 />

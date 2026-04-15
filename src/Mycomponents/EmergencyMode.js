@@ -27,10 +27,16 @@ const emergencyChecks = [
   'Keep your phone nearby so the assigned professional can reach you quickly.',
 ];
 
-const priorityServices = services.filter((service) => [1, 2, 4].includes(service.id));
-
-export default function EmergencyMode({ addToCart }) {
+export default function EmergencyMode({ addToCart, currentPincode }) {
   const navigate = useNavigate();
+  const priorityServices = services.filter((service) => {
+    const isPriorityService = [1, 2, 4].includes(service.id);
+    const matchesPincode = currentPincode
+      ? service.availablePincodes.includes(currentPincode)
+      : true;
+
+    return isPriorityService && matchesPincode;
+  });
 
   return (
     <main className="inner-page emergency-page">
@@ -118,6 +124,11 @@ export default function EmergencyMode({ addToCart }) {
                   These services are best suited for situations where the issue is disruptive,
                   safety-sensitive, or likely to get worse if ignored.
                 </p>
+                {currentPincode && (
+                  <div className="service-filter-note mt-3">
+                    <strong>Area filter:</strong> {currentPincode}
+                  </div>
+                )}
               </div>
               <div className="emergency-support-pill">
                 <i className="bi bi-headset"></i>
@@ -125,51 +136,60 @@ export default function EmergencyMode({ addToCart }) {
               </div>
             </div>
 
-            <div className="services-grid services-grid--page emergency-services-grid">
-              {priorityServices.map((service) => (
-                <article className="service-card emergency-service-card" key={service.id}>
-                  <img src={service.image} alt={service.name} />
-                  <div className="service-card-body">
-                    <span className="service-tag emergency-service-tag">Priority dispatch</span>
-                    <div className="service-topline">
-                      <span className="service-rating">
-                        <i className="bi bi-star-fill"></i>
-                        {service.rating}
-                      </span>
-                      <span className="service-price">From Rs. {service.price}</span>
+            {priorityServices.length === 0 ? (
+              <div className="content-card">
+                <h3 className="content-title">No emergency services found for this area.</h3>
+                <p className="content-copy mb-0">
+                  Try another pincode to see available emergency support near you.
+                </p>
+              </div>
+            ) : (
+              <div className="services-grid services-grid--page emergency-services-grid">
+                {priorityServices.map((service) => (
+                  <article className="service-card emergency-service-card" key={service.id}>
+                    <img src={service.image} alt={service.name} />
+                    <div className="service-card-body">
+                      <span className="service-tag emergency-service-tag">Priority dispatch</span>
+                      <div className="service-topline">
+                        <span className="service-rating">
+                          <i className="bi bi-star-fill"></i>
+                          {service.rating}
+                        </span>
+                        <span className="service-price">From Rs. {service.price}</span>
+                      </div>
+                      <h3>{service.name}</h3>
+                      <p>{service.description}</p>
+                      <div className="emergency-service-meta">
+                        <span>
+                          <i className="bi bi-clock-history"></i>
+                          Faster matching priority
+                        </span>
+                        <span>
+                          <i className="bi bi-check2-circle"></i>
+                          Verified professionals
+                        </span>
+                      </div>
+                      <div className="d-flex flex-column gap-2 mt-3">
+                        <button
+                          type="button"
+                          className="btn-cart"
+                          onClick={() => addToCart(service)}
+                        >
+                          Add to cart
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-book"
+                          onClick={() => navigate('/checkout', { state: { service, emergency: true } })}
+                        >
+                          Book emergency service
+                        </button>
+                      </div>
                     </div>
-                    <h3>{service.name}</h3>
-                    <p>{service.description}</p>
-                    <div className="emergency-service-meta">
-                      <span>
-                        <i className="bi bi-clock-history"></i>
-                        Faster matching priority
-                      </span>
-                      <span>
-                        <i className="bi bi-check2-circle"></i>
-                        Verified professionals
-                      </span>
-                    </div>
-                    <div className="d-flex flex-column gap-2 mt-3">
-                      <button
-                        type="button"
-                        className="btn-cart"
-                        onClick={() => addToCart(service)}
-                      >
-                        Add to cart
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-book"
-                        onClick={() => navigate('/checkout', { state: { service, emergency: true } })}
-                      >
-                        Book emergency service
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -194,7 +214,10 @@ export default function EmergencyMode({ addToCart }) {
                 For non-urgent requests, you can browse all services, add them to cart, and book at
                 your own pace.
               </p>
-              <Link to="/services" className="emergency-secondary-btn emergency-panel-link">
+              <Link
+                to={currentPincode ? `/services?pincode=${currentPincode}` : '/services'}
+                className="emergency-secondary-btn emergency-panel-link"
+              >
                 Browse all services
               </Link>
             </div>
