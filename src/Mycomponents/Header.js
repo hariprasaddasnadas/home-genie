@@ -201,11 +201,11 @@ export default function Header({
                     role="menuitem"
                     onClick={() => {
                       setIsLoginMenuOpen(false);
-                      navigate('/partner');
+                      navigate('/partner/dashboard');
                     }}
                   >
                     <i className="bi bi-briefcase"></i>
-                    Become partner
+                    Partner login
                   </button>
                 </div>
               )}

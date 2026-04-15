@@ -1402,6 +1402,122 @@
   box-shadow: 0 12px 30px rgba(20, 33, 61, 0.25);
 }
 
+.partner-dashboard-page {
+  padding: 2rem 0 4.5rem;
+}
+
+.partner-dashboard-section {
+  padding: 1rem 0;
+}
+
+.partner-dashboard-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.8rem;
+}
+
+.partner-dashboard-title {
+  max-width: 52rem;
+  margin: 0;
+  color: #1a2a52;
+  font-size: clamp(2.2rem, 4vw, 3.8rem);
+  line-height: 1.03;
+  letter-spacing: -0.04em;
+}
+
+.partner-dashboard-copy {
+  max-width: 42rem;
+  margin-top: 1rem;
+  color: #667085;
+  font-size: 1.02rem;
+  line-height: 1.75;
+}
+
+.partner-dashboard-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.partner-status-badge,
+.partner-service-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: rgba(106, 56, 194, 0.08);
+  color: #6a38c2;
+  font-weight: 700;
+}
+
+.partner-status-text {
+  color: #596273;
+  font-weight: 600;
+}
+
+.partner-dashboard-layout {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.partner-account-card,
+.partner-service-form-card,
+.partner-listings-section {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(67, 35, 122, 0.1);
+  border-radius: 2rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+}
+
+.partner-account-card,
+.partner-service-form-card {
+  padding: 2rem;
+}
+
+.partner-listings-section {
+  margin-top: 1.75rem;
+  padding: 2rem;
+}
+
+.partner-account-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.partner-account-item {
+  padding: 1rem 1.1rem;
+  border-radius: 1.2rem;
+  background: #faf8ff;
+  border: 1px solid rgba(106, 56, 194, 0.08);
+}
+
+.partner-account-item span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #7a8296;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.partner-account-item strong {
+  color: #1a2a52;
+  font-size: 1rem;
+}
+
+.partner-service-textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
 .login-page {
   padding: 2.25rem 0 4.5rem;
 }
@@ -1572,6 +1688,13 @@
   .login-layout {
     grid-template-columns: 1fr;
   }
+
+  .partner-dashboard-hero,
+  .partner-dashboard-layout,
+  .partner-account-grid {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
 }
 
 @media (max-width: 767px) {
@@ -1587,6 +1710,12 @@
   .login-form-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .partner-account-card,
+  .partner-service-form-card,
+  .partner-listings-section {
+    padding: 1.5rem;
   }
   .benefits-grid, .partner-metrics {
     grid-template-columns: 1fr;
@@ -1658,7 +1787,10 @@ body.dark-mode .form-select {
 
 body.dark-mode .login-intro-card,
 body.dark-mode .login-form-card,
-body.dark-mode .login-feature-item {
+body.dark-mode .login-feature-item,
+body.dark-mode .partner-account-card,
+body.dark-mode .partner-service-form-card,
+body.dark-mode .partner-listings-section {
   background: #1e293b;
   border-color: rgba(255, 255, 255, 0.1);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
@@ -1673,7 +1805,23 @@ body.dark-mode .remember-check {
 }
 
 body.dark-mode .login-copy,
-body.dark-mode .login-feature-item p {
+body.dark-mode .login-feature-item p,
+body.dark-mode .partner-dashboard-copy,
+body.dark-mode .partner-status-text {
+  color: #cbd5e1;
+}
+
+body.dark-mode .partner-dashboard-title,
+body.dark-mode .partner-account-item strong {
+  color: #f8fafc;
+}
+
+body.dark-mode .partner-account-item {
+  background: #334155;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .partner-account-item span {
   color: #cbd5e1;
 }
 

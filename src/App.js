@@ -14,6 +14,7 @@ import FAQ from './Mycomponents/FAQ';
 import Services from './Mycomponents/Services';
 import EmergencyMode from './Mycomponents/EmergencyMode';
 import UserLogin from './Mycomponents/UserLogin';
+import PartnerDashboard from './Mycomponents/PartnerDashboard';
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
@@ -93,6 +94,7 @@ function App() {
             element={<EmergencyMode addToCart={addToCart} currentPincode={currentPincode} />}
           />
           <Route path="/login" element={<UserLogin />} />
+          <Route path="/partner/dashboard" element={<PartnerDashboard />} />
           <Route path="/partner" element={<PartnerRegistration />} />
         </Routes>
         <Footer />
