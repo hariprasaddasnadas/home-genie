@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './navbar.css';
 import { services } from '../data';
 
@@ -7,24 +7,12 @@ export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleThe
   const [pincode, setPincode] = useState('');
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const handleOtherSearch = () => setQuery('');
     window.addEventListener('homeSearchActive', handleOtherSearch);
     return () => window.removeEventListener('homeSearchActive', handleOtherSearch);
   }, []);
-
-  const handleBookServiceClick = () => {
-    if (location.pathname !== '/') {
-      navigate('/');
-      setTimeout(() => {
-        document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    } else {
-      document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   const filteredServices = query
     ? services.filter((service) => {
@@ -135,14 +123,9 @@ export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleThe
                 <i className="bi bi-moon-fill fs-5" style={{ color: '#6a38c2' }}></i>
               )}
             </button>
-
             <Link to="/partner" className="partner nav-link-custom text-decoration-none d-none d-md-inline-block">
               Partner with us
             </Link>
-
-            <span className="book nav-link-custom text-decoration-none d-none d-md-inline-block" style={{ cursor: 'pointer' }} onClick={handleBookServiceClick}>
-              Book a service
-            </span>
 
             <Link to="/cart" className="cart-wrapper text-decoration-none text-dark position-relative mx-3 d-flex align-items-center">
               <i className="bi bi-cart3 fs-4" style={{ color: '#14213d' }}></i>
@@ -165,9 +148,6 @@ export default function Header({ cartCount = 0, addToCart, isDarkMode, toggleThe
         <Link to="/partner" className="partner nav-link-custom text-decoration-none">
           Partner with us
         </Link>
-        <span className="book nav-link-custom text-decoration-none" style={{ cursor: 'pointer' }} onClick={handleBookServiceClick}>
-          Book a service
-        </span>
       </div>
     </>
   );

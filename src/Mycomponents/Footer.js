@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom';
 
 const quickLinks = [
   { label: 'Home', to: '/' },
+  { label: 'About', to: '/about' },
+  { label: 'Services', to: '/services' },
+  { label: 'Contact', to: '/contact' },
+  { label: 'FAQ', to: '/faq' },
   { label: 'Become a Partner', to: '/partner' },
-  { label: 'Popular Services', to: '/' },
+  { label: 'Popular Services', to: '/services' },
 ];
 
 const serviceLinks = ['AC Service', 'Cleaning', 'Electrician', 'Salon at Home'];
@@ -71,7 +75,7 @@ export default function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <span>© 2026 HomeGenie. All rights reserved.</span>
+          <span>Copyright 2026 HomeGenie. All rights reserved.</span>
           <div className="footer-bottom-links">
             <span>Privacy Policy</span>
             <span>Terms of Service</span>

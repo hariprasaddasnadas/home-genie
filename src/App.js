@@ -8,6 +8,11 @@ import Home from './Mycomponents/Home';
 import Footer from './Mycomponents/Footer';
 import Cart from './Mycomponents/Cart';
 import Checkout from './Mycomponents/Checkout';
+import About from './Mycomponents/About';
+import Contact from './Mycomponents/Contact';
+import FAQ from './Mycomponents/FAQ';
+import Services from './Mycomponents/Services';
+import EmergencyMode from './Mycomponents/EmergencyMode';
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
@@ -58,16 +63,14 @@ function App() {
       <div className={`App ${isDarkMode ? 'dark-mode-active' : ''}`}>
         <Header cartCount={cartItems.length} addToCart={addToCart} isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
         <Routes>
-          {/* This line makes the Home component show on the main page */}
           <Route path="/" element={<Home addToCart={addToCart} />} />
-          
-          {/* This line handles the Cart page */}
           <Route path="/cart" element={<Cart cartItems={cartItems} removeFromCart={removeFromCart} />} />
-          
-          {/* This line handles the Checkout page */}
           <Route path="/checkout" element={<Checkout cartItems={cartItems} clearCart={clearCart} showToast={showToast} />} />
-          
-          {/* This line handles the Partner page */}
+          <Route path="/about" element={<About />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/emergency" element={<EmergencyMode addToCart={addToCart} />} />
           <Route path="/partner" element={<PartnerRegistration />} />
         </Routes>
         <Footer />

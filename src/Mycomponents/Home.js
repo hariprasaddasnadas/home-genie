@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { services } from '../data';
 
-
 const highlights = [
   {
     icon: 'bi-patch-check',
@@ -169,7 +168,7 @@ export default function Home({ addToCart }) {
                       </div>
                     </div>
 
-                    <div className="hero-feature-item emergency-item">
+                    <Link to="/emergency" className="hero-feature-item emergency-item hero-feature-link">
                       <div className="hero-feature-icon emergency">
                         <i className="bi bi-exclamation-octagon-fill"></i>
                       </div>
@@ -177,7 +176,7 @@ export default function Home({ addToCart }) {
                         <h4>Emergency Mode</h4>
                         <p>Priority matching for urgent electrical, plumbing, and AC issues.</p>
                       </div>
-                    </div>
+                    </Link>
 
                     <div className="hero-feature-item">
                       <div className="hero-feature-icon">
@@ -240,15 +239,17 @@ export default function Home({ addToCart }) {
                 Explore curated home services designed for speed, quality, and peace of mind.
               </p>
             </div>
-            <Link to="/partner" className="text-decoration-none fw-semibold">
-              Become a service partner <i className="bi bi-arrow-right-short"></i>
+            <Link to="/services" className="text-decoration-none fw-semibold">
+              View all services <i className="bi bi-arrow-right-short"></i>
             </Link>
           </div>
 
           <div className="services-grid">
             {services.map((service) => (
               <article className="service-card" key={service.id}>
-                <img src={service.image} alt={service.name} />
+                <Link to="/services" className="text-decoration-none">
+                  <img src={service.image} alt={service.name} />
+                </Link>
                 <div className="service-card-body">
                   <div className="service-topline">
                     <span className="service-rating">
