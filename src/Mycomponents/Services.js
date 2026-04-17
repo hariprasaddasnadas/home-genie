@@ -12,10 +12,10 @@ export default function Services({ currentPincode }) {
     const matchesService = selectedService ? service.slug === selectedService : true;
     const matchesSearch = selectedSearch
       ? service.name.toLowerCase().includes(selectedSearch.toLowerCase()) ||
-        service.description.toLowerCase().includes(selectedSearch.toLowerCase()) ||
-        service.keywords?.some((keyword) =>
-          keyword.toLowerCase().includes(selectedSearch.toLowerCase())
-        )
+      service.description.toLowerCase().includes(selectedSearch.toLowerCase()) ||
+      service.keywords?.some((keyword) =>
+        keyword.toLowerCase().includes(selectedSearch.toLowerCase())
+      )
       : true;
     const matchesPincode = selectedPincode
       ? service.availablePincodes.includes(selectedPincode)
@@ -56,32 +56,32 @@ export default function Services({ currentPincode }) {
               </p>
             </div>
           ) : (
-          <div className="services-grid services-grid--page">
-            {visibleServices.map((service) => (
-              <article className="service-card" key={service.id}>
-                <img src={service.image} alt={service.name} />
-                <div className="service-card-body">
-                  <span className="service-tag">{service.category}</span>
-                  <div className="service-topline">
-                    <span className="service-rating">
-                      <i className="bi bi-star-fill"></i>
-                      {service.rating}
-                    </span>
-                    <span className="service-price">From Rs. {service.price}</span>
+            <div className="services-grid services-grid--page">
+              {visibleServices.map((service) => (
+                <article className="service-card" key={service.id}>
+                  <img src={service.image} alt={service.name} />
+                  <div className="service-card-body">
+                    <span className="service-tag">{service.category}</span>
+                    <div className="service-topline">
+                      <span className="service-rating">
+                        <i className="bi bi-star-fill"></i>
+                        {service.rating}
+                      </span>
+                      <span className="service-price">From Rs. {service.price}</span>
+                    </div>
+                    <h3>{service.name}</h3>
+                    <p>{service.description}</p>
+                    <p className="service-extra">Typical duration: {service.duration}</p>
+                    <div className="service-actions">
+                      <Link to="/checkout" state={{ service }} className="btn-book text-decoration-none text-center">
+                        Book now
+                      </Link>
+                      {/* <span className="service-link-text">{service.details}</span> */}
+                    </div>
                   </div>
-                  <h3>{service.name}</h3>
-                  <p>{service.description}</p>
-                  <p className="service-extra">Typical duration: {service.duration}</p>
-                  <div className="service-actions">
-                    <Link to="/contact" className="btn-book text-decoration-none text-center">
-                      Book now
-                    </Link>
-                    <span className="service-link-text">{service.details}</span>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                </article>
+              ))}
+            </div>
           )}
         </div>
       </section>
