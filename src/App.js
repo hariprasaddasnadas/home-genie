@@ -15,11 +15,13 @@ import Services from './Mycomponents/Services';
 import EmergencyMode from './Mycomponents/EmergencyMode';
 import UserLogin from './Mycomponents/UserLogin';
 import PartnerDashboard from './Mycomponents/PartnerDashboard';
+import ServiceConfigModal from './Mycomponents/ServiceConfigModal';
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [currentPincode, setCurrentPincode] = useState('');
+  const [modalService, setModalService] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('hg-theme') === 'dark';
   });
@@ -43,14 +45,25 @@ function App() {
     }, 3000);
   };
 
-  const addToCart = (service) => {
-    const isAlreadyAdded = cartItems.some((item) => item.id === service.id);
+  const performAddToCart = (answers) => {
+    const customizedService = {
+      ...modalService,
+      price: answers.finalPrice,
+      configOptions: answers
+    };
+
+    const isAlreadyAdded = cartItems.some((item) => item.id === customizedService.id);
     if (isAlreadyAdded) {
       showToast("You have already added this service in your cart!", "danger");
     } else {
-      setCartItems((prevItems) => [...prevItems, service]);
+      setCartItems((prevItems) => [...prevItems, customizedService]);
       showToast("Item added to the cart", "success");
     }
+    setModalService(null);
+  };
+
+  const addToCart = (service) => {
+    setModalService(service);
   };
 
   const removeFromCart = (serviceId) => {
@@ -99,6 +112,15 @@ function App() {
         </Routes>
         <Footer />
         
+        {modalService && (
+          <ServiceConfigModal
+            service={modalService}
+            onClose={() => setModalService(null)}
+            onAction={performAddToCart}
+            actionText="Add to Cart"
+          />
+        )}
+
         {/* Toast Notification */}
         {toast.show && (
           <div className="position-fixed bottom-0 end-0 p-4" style={{ zIndex: 1050 }}>

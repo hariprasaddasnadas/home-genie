@@ -14,6 +14,14 @@ export const services = [
     duration: '60 to 90 minutes',
     category: 'Cooling Care',
     availablePincodes: ['500001', '500032', '560001', '560037', '600001', '600100'],
+    questions: [
+      { id: 'q1', type: 'number', label: 'How many ACs?', min: 1, max: 10, default: 1, isMultiplier: true },
+      { id: 'q2', type: 'select', label: 'Type of ACs', options: [
+        { label: 'Split AC', extra: 0 },
+        { label: 'Window AC', extra: -100 },
+        { label: 'Both', extra: 50 }
+      ], default: 'Split AC' },
+    ]
   },
   {
     id: 2,
@@ -30,6 +38,15 @@ export const services = [
     duration: '2 to 3 hours',
     category: 'Home Hygiene',
     availablePincodes: ['500001', '500032', '110001', '560001', '600001', '700001'],
+    questions: [
+      { id: 'q1', type: 'select', label: 'Number of rooms', options: [
+        { label: '1 RK', extra: -500 },
+        { label: '1 BHK', extra: 0 },
+        { label: '2 BHK', extra: 500 },
+        { label: '3 BHK+', extra: 1000 },
+        { label: 'Villa/Independent House', extra: 2000 }
+      ], default: '1 BHK' }
+    ]
   },
   {
     id: 3,
@@ -46,6 +63,18 @@ export const services = [
     duration: '60 to 120 minutes',
     category: 'Beauty & Wellness',
     availablePincodes: ['110001', '110048', '560001', '560037', '700001', '700091'],
+    questions: [
+      { id: 'q1', type: 'select', label: 'Service For', options: [
+        { label: 'Women', extra: 0 },
+        { label: 'Men', extra: -100 }
+      ], default: 'Women' },
+      { id: 'q2', type: 'select', label: 'Preference', options: ['Women', 'Men'], default: 'Women' },
+      { id: 'q3', type: 'select', label: 'Service Type', options: [
+        { label: 'Only Cutting', extra: -300 },
+        { label: 'Haircut + Shampoo', extra: 0 },
+        { label: 'Full Grooming Package', extra: 500 }
+      ], default: 'Only Cutting' }
+    ]
   },
   {
     id: 4,
@@ -62,5 +91,14 @@ export const services = [
     duration: '30 to 60 minutes',
     category: 'Repair & Install',
     availablePincodes: ['500001', '110001', '560001', '560037', '600001', '700001'],
+    questions: [
+      { id: 'q1', type: 'select', label: 'Type of Service Needed', options: [
+        { label: 'Wiring Issue', extra: 0 },
+        { label: 'Switch Board Repair/Install', extra: 50 },
+        { label: 'Fan Repair/Install', extra: 200 },
+        { label: 'Lighting Install', extra: 100 },
+        { label: 'General Diagnostics', extra: 50 }
+      ], default: 'Wiring Issue' }
+    ]
   },
 ];

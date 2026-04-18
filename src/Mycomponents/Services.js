@@ -1,9 +1,13 @@
-import React from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { services } from '../data';
+import ServiceConfigModal from './ServiceConfigModal';
 
 export default function Services({ currentPincode }) {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeService, setActiveService] = useState(null);
   const selectedService = searchParams.get('service') || '';
   const selectedSearch = searchParams.get('search') || '';
   const selectedPincode = searchParams.get('pincode') || currentPincode || '';
@@ -73,9 +77,14 @@ export default function Services({ currentPincode }) {
                     <p>{service.description}</p>
                     <p className="service-extra">Typical duration: {service.duration}</p>
                     <div className="service-actions">
-                      <Link to="/checkout" state={{ service }} className="btn-book text-decoration-none text-center">
+                      <button
+                        type="button" 
+                        onClick={() => { setActiveService(service); setIsModalOpen(true); }} 
+                        className="btn-book text-center w-100 border-0"
+                        style={{ background: '#6a38c2', color: '#fff', padding: '10px', borderRadius: '8px', fontWeight: 'bold' }}
+                      >
                         Book now
-                      </Link>
+                      </button>
                       {/* <span className="service-link-text">{service.details}</span> */}
                     </div>
                   </div>
@@ -85,6 +94,17 @@ export default function Services({ currentPincode }) {
           )}
         </div>
       </section>
+      {isModalOpen && (
+        <ServiceConfigModal
+          service={activeService}
+          onClose={() => setIsModalOpen(false)}
+          actionText="Checkout"
+          onAction={(answers) => {
+            setIsModalOpen(false);
+            navigate('/checkout', { state: { service: activeService, configOptions: answers } });
+          }}
+        />
+      )}
     </main>
   );
 }

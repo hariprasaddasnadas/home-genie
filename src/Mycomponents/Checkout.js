@@ -8,7 +8,16 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
   // If a user clicks "Book now" straight from Home, the service is passed via state.
   // Otherwise, we check out everything inside the global cart.
   const isSingleCheckout = !!location.state?.service;
-  const itemsToCheckout = isSingleCheckout ? [location.state.service] : cartItems;
+  
+  let singleServiceItem = null;
+  if (isSingleCheckout) {
+    singleServiceItem = { ...location.state.service };
+    if (location.state.configOptions && location.state.configOptions.finalPrice) {
+      singleServiceItem.price = location.state.configOptions.finalPrice;
+    }
+  }
+
+  const itemsToCheckout = isSingleCheckout ? [singleServiceItem] : cartItems;
 
   const totalAmount = itemsToCheckout.reduce((acc, item) => acc + parseInt(item.price, 10), 0);
 
