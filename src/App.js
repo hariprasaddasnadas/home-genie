@@ -14,6 +14,7 @@ import FAQ from './Mycomponents/FAQ';
 import Services from './Mycomponents/Services';
 import EmergencyMode from './Mycomponents/EmergencyMode';
 import UserLogin from './Mycomponents/UserLogin';
+import UserSignup from './Mycomponents/UserSignup';
 import PartnerDashboard from './Mycomponents/PartnerDashboard';
 import ServiceConfigModal from './Mycomponents/ServiceConfigModal';
 
@@ -107,6 +108,7 @@ function App() {
             element={<EmergencyMode addToCart={addToCart} currentPincode={currentPincode} />}
           />
           <Route path="/login" element={<UserLogin />} />
+          <Route path="/signup" element={<UserSignup />} />
           <Route path="/partner/dashboard" element={<PartnerDashboard />} />
           <Route path="/partner" element={<PartnerRegistration />} />
         </Routes>

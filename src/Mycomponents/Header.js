@@ -162,6 +162,10 @@ export default function Header({
               </span>
             </Link>
 
+            <Link to="/signup" className="btn-login border-0 rounded-4 d-inline-flex align-items-center justify-content-center text-decoration-none fw-semibold ms-1 me-2" style={{ fontSize: '0.95rem' }}>
+              Sign Up
+            </Link>
+
             <div className="login-menu-wrapper ms-1">
               <button
                 type="button"

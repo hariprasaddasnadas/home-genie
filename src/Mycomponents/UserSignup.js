@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-export default function UserLogin() {
+export default function UserSignup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -17,10 +17,10 @@ export default function UserLogin() {
         <div className="container">
           <div className="login-layout">
             <div className="login-intro-card">
-              <span className="section-label">User Login</span>
-              <h1 className="login-title">Welcome back to HomeGenie.</h1>
+              <span className="section-label">User Sign Up</span>
+              <h1 className="login-title">Join HomeGenie today.</h1>
               <p className="login-copy">
-                Sign in to manage bookings, track active services, review previous orders,
+                Create an account to manage bookings, track active services, review previous orders,
                 and keep your home-care routine organized in one place.
               </p>
 
@@ -66,22 +66,22 @@ export default function UserLogin() {
 
             <div className="login-form-card">
               <span className="login-kicker">
-                <i className="bi bi-person-circle"></i>
-                Account access
+                <i className="bi bi-person-plus-fill"></i>
+                Create account
               </span>
 
-              <h2 className="content-title mb-2">Sign in to your account</h2>
+              <h2 className="content-title mb-2">Sign up for an account</h2>
               <p className="content-copy mb-4">
-                Use your registered email and password to continue.
+                Enter your email and create a password to get started.
               </p>
 
               <form className="login-form" onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label className="form-label fw-semibold" htmlFor="login-email">
+                  <label className="form-label fw-semibold" htmlFor="signup-email">
                     Email address
                   </label>
                   <input
-                    id="login-email"
+                    id="signup-email"
                     type="email"
                     className="form-control"
                     placeholder="Enter your email"
@@ -91,15 +91,15 @@ export default function UserLogin() {
                 </div>
 
                 <div className="mb-3">
-                  <label className="form-label fw-semibold" htmlFor="login-password">
+                  <label className="form-label fw-semibold" htmlFor="signup-password">
                     Password
                   </label>
                   <div className="position-relative">
                     <input
-                      id="login-password"
+                      id="signup-password"
                       type={showPassword ? "text" : "password"}
                       className="form-control pe-5"
-                      placeholder="Enter your password"
+                      placeholder="Create a password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                     />
@@ -131,11 +131,17 @@ export default function UserLogin() {
                 </div>
 
                 <button type="submit" className="login-submit-btn">
-                  Login
+                  Sign Up
                 </button>
+
+                <div className="mt-4 text-center">
+                  <Link to="/login" className="login-submit-btn text-decoration-none d-flex align-items-center justify-content-center w-100">
+                    Do you already have an account? Sign in
+                  </Link>
+                </div>
               </form>
 
-              <div className="login-footer-copy">
+              <div className="login-footer-copy mt-3">
                 New to HomeGenie?
                 <Link to="/services" className="ms-2 text-decoration-none fw-bold">
                   Explore services
