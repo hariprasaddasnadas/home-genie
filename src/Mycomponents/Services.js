@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { services } from '../data';
 import ServiceConfigModal from './ServiceConfigModal';
+import { apiUrl } from '../api';
 
 export default function Services({ currentPincode }) {
   const [searchParams] = useSearchParams();
@@ -88,7 +89,7 @@ export default function Services({ currentPincode }) {
         if (activePartnerServiceType) {
           params.set('service_type', activePartnerServiceType);
         }
-        const response = await fetch(`http://127.0.0.1:8000/api/partners/?${params.toString()}`);
+        const response = await fetch(apiUrl(`/api/partners/?${params.toString()}`));
         const data = await response.json();
         if (response.ok) {
           setPartners(data.results || []);
@@ -140,7 +141,7 @@ export default function Services({ currentPincode }) {
     setBookingMessage('');
     setBookingLoadingId(partnerId);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/partner/book/', {
+      const response = await fetch(apiUrl('/api/partner/book/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -178,7 +179,7 @@ export default function Services({ currentPincode }) {
     setStatusLoading(true);
     setStatusResults([]);
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/customer/booking-status/?phone=${statusPhone}`);
+      const response = await fetch(apiUrl(`/api/customer/booking-status/?phone=${statusPhone}`));
       const data = await response.json();
       if (!response.ok) {
         setBookingMessage(data.detail || 'Could not fetch booking status.');

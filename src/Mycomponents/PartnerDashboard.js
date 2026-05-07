@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { apiUrl } from '../api';
 
 const initialProfile = {
   partnerName: 'Rahul Services Hub',
@@ -94,7 +95,7 @@ export default function PartnerDashboard() {
 
         setRequestsLoading(true);
         setRequestsError('');
-        const response = await fetch(`http://127.0.0.1:8000/api/partner/requests/?email=${encodeURIComponent(email)}`);
+        const response = await fetch(apiUrl(`/api/partner/requests/?email=${encodeURIComponent(email)}`));
         const data = await response.json();
         if (!response.ok) {
           setRequestsError(data.detail || 'Could not load customer requests.');
@@ -115,7 +116,7 @@ export default function PartnerDashboard() {
   const updateRequestStatus = async (requestId, action) => {
     setRequestActionLoadingId(requestId);
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/partner/request-action/', {
+      const response = await fetch(apiUrl('/api/partner/request-action/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ request_id: requestId, action }),
