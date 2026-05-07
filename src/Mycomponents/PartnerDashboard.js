@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const initialProfile = {
   partnerName: 'Rahul Services Hub',
@@ -21,8 +21,34 @@ const initialServices = [
 ];
 
 export default function PartnerDashboard() {
-  const [profile] = useState(initialProfile);
+  const getProfileFromStorage = () => {
+    try {
+      const stored = localStorage.getItem('partnerAuth');
+      if (!stored) return initialProfile;
+      const parsed = JSON.parse(stored);
+      const partner = parsed?.partner_profile;
+      const user = parsed?.user;
+      if (!partner || !user) return initialProfile;
+
+      return {
+        partnerName: partner.full_name || initialProfile.partnerName,
+        ownerName: partner.full_name || initialProfile.ownerName,
+        email: user.email || initialProfile.email,
+        phone: partner.phone ? `+91 ${partner.phone}` : initialProfile.phone,
+        category: partner.service_type || initialProfile.category,
+        pincode: partner.pincode || initialProfile.pincode,
+      };
+    } catch (error) {
+      return initialProfile;
+    }
+  };
+
+  const [profile] = useState(getProfileFromStorage);
   const [services, setServices] = useState(initialServices);
+  const [requests, setRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [requestsError, setRequestsError] = useState('');
+  const [requestActionLoadingId, setRequestActionLoadingId] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     image: '',
@@ -56,6 +82,55 @@ export default function PartnerDashboard() {
       price: '',
       description: '',
     });
+  };
+
+  const fetchPartnerRequests = async () => {
+      try {
+        const stored = localStorage.getItem('partnerAuth');
+        if (!stored) return;
+        const parsed = JSON.parse(stored);
+        const email = parsed?.user?.email;
+        if (!email) return;
+
+        setRequestsLoading(true);
+        setRequestsError('');
+        const response = await fetch(`http://127.0.0.1:8000/api/partner/requests/?email=${encodeURIComponent(email)}`);
+        const data = await response.json();
+        if (!response.ok) {
+          setRequestsError(data.detail || 'Could not load customer requests.');
+          return;
+        }
+        setRequests(data.results || []);
+      } catch (error) {
+        setRequestsError('Could not load customer requests.');
+      } finally {
+        setRequestsLoading(false);
+      }
+    };
+
+  useEffect(() => {
+    fetchPartnerRequests();
+  }, []);
+
+  const updateRequestStatus = async (requestId, action) => {
+    setRequestActionLoadingId(requestId);
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/partner/request-action/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: requestId, action }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setRequestsError(data.detail || 'Could not update request status.');
+        return;
+      }
+      await fetchPartnerRequests();
+    } catch (error) {
+      setRequestsError('Could not update request status.');
+    } finally {
+      setRequestActionLoadingId(null);
+    }
   };
 
   return (
@@ -227,6 +302,68 @@ export default function PartnerDashboard() {
                 </article>
               ))}
             </div>
+          </section>
+
+          <section className="partner-listings-section mt-4">
+            <div className="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-3 mb-4">
+              <div>
+                <span className="section-label">Customer requests</span>
+                <h2 className="content-title mb-2">Incoming service requests</h2>
+                <p className="content-copy mb-0">Customers who selected your profile will appear here.</p>
+              </div>
+              <div className="partner-service-count">
+                <i className="bi bi-telephone-inbound-fill"></i>
+                {requests.length} request{requests.length > 1 ? 's' : ''}
+              </div>
+            </div>
+
+            {requestsLoading ? (
+              <p className="content-copy mb-0">Loading customer requests...</p>
+            ) : requestsError ? (
+              <p className="content-copy mb-0 text-danger">{requestsError}</p>
+            ) : requests.length === 0 ? (
+              <p className="content-copy mb-0">No requests yet. They will appear here when customers contact you.</p>
+            ) : (
+              <div className="services-grid services-grid--page">
+                {requests.map((request) => (
+                  <article className="service-card" key={request.id}>
+                    <div className="service-card-body">
+                      <span className="service-tag">Status: {request.status || 'pending'}</span>
+                      <h3>{request.customer_name}</h3>
+                      <p className="mb-1"><strong>Phone:</strong> +91 {request.customer_phone}</p>
+                      <p className="mb-1"><strong>Address:</strong> {request.customer_address}</p>
+                      <p className="mb-1"><strong>Issue:</strong> {request.issue_details || 'Not provided'}</p>
+                      <p className="mb-2"><strong>Preferred time:</strong> {request.preferred_time || 'Not provided'}</p>
+                      {request.status === 'pending' && (
+                        <div className="d-flex gap-2 mb-2">
+                          <button
+                            type="button"
+                            className="btn-book text-center border-0"
+                            style={{ background: '#198754', color: '#fff', padding: '8px 12px', borderRadius: '8px', fontWeight: 'bold' }}
+                            disabled={requestActionLoadingId === request.id}
+                            onClick={() => updateRequestStatus(request.id, 'accept')}
+                          >
+                            Accept
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-book text-center border-0"
+                            style={{ background: '#dc3545', color: '#fff', padding: '8px 12px', borderRadius: '8px', fontWeight: 'bold' }}
+                            disabled={requestActionLoadingId === request.id}
+                            onClick={() => updateRequestStatus(request.id, 'decline')}
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                      <p className="service-extra mb-0">
+                        Requested on: {new Date(request.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
         </div>
       </section>

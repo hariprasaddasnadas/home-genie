@@ -94,8 +94,23 @@ export default function Home({ addToCart, currentPincode, setCurrentPincode }) {
                                       </div>
                                     </div>
                                     <div className="d-flex flex-column flex-sm-row gap-2">
-                                      <button type="button" className="btn btn-sm btn-outline-primary rounded-pill px-2 px-sm-3" style={{ fontSize: '0.8rem' }} onClick={() => { addToCart && addToCart(service); setQuery(''); }}>Add to cart</button>
-                                      <button type="button" className="btn btn-sm btn-primary rounded-pill px-2 px-sm-3" style={{ backgroundColor: '#6a38c2', borderColor: '#6a38c2', fontSize: '0.8rem' }} onClick={() => { navigate('/services?service=' + service.slug + (currentPincode ? '&pincode=' + currentPincode : '')); setQuery(''); }}>View in area</button>
+                                      <button
+                                        type="button"
+                                        className="btn btn-sm btn-primary rounded-pill px-2 px-sm-3"
+                                        style={{ backgroundColor: '#6a38c2', borderColor: '#6a38c2', fontSize: '0.8rem' }}
+                                        onClick={() => {
+                                          const params = new URLSearchParams();
+                                          params.set('service', service.slug);
+                                          params.set('search', query.trim() || service.name);
+                                          if (currentPincode) {
+                                            params.set('pincode', currentPincode);
+                                          }
+                                          navigate(`/services?${params.toString()}`);
+                                          setQuery('');
+                                        }}
+                                      >
+                                        View partners
+                                      </button>
                                     </div>
                                   </div>
                                 ))}

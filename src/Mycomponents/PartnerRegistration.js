@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const benefitItems = [
   {
@@ -24,6 +25,10 @@ const benefitItems = [
 ];
 
 export default function PartnerRegistration() {
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
   const [formData, setFormData] = useState({
     partnerName: '',
     email: '',
@@ -31,6 +36,9 @@ export default function PartnerRegistration() {
     serviceCategory: 'Plumbing',
     pincode: '',
     experience: '1-3 Years',
+    city: '',
+    password: '',
+    confirmPassword: '',
   });
 
   const handleChange = (event) => {
@@ -42,10 +50,71 @@ export default function PartnerRegistration() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const mapServiceType = (category) => {
+    const serviceMap = {
+      Plumbing: 'plumber',
+      Electrician: 'electrician',
+      'AC Repair': 'appliance_repair',
+      Cleaning: 'cleaning',
+      Carpentry: 'carpenter',
+      Salon: 'other',
+    };
+    return serviceMap[category] || 'other';
+  };
+
+  const mapExperienceYears = (value) => {
+    const yearsMap = {
+      'Less than 1 Year': 0,
+      '1-3 Years': 2,
+      '3-5 Years': 4,
+      '5+ Years': 5,
+    };
+    return yearsMap[value] ?? 0;
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log('New Partner Lead:', formData);
-    alert('Application received. Our partner team will contact you shortly.');
+    setIsSubmitting(true);
+    setSubmitError('');
+    setSubmitSuccess('');
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/partner/signup/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          full_name: formData.partnerName,
+          email: formData.email,
+          phone: formData.phone,
+          pincode: formData.pincode,
+          city: formData.city,
+          service_type: mapServiceType(formData.serviceCategory),
+          experience_years: mapExperienceYears(formData.experience),
+          password: formData.password,
+          confirm_password: formData.confirmPassword,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        const errorText = data.detail || Object.values(data)[0]?.[0] || 'Partner signup failed.';
+        setSubmitError(errorText);
+        return;
+      }
+
+      localStorage.setItem('partnerAuth', JSON.stringify(data));
+      localStorage.removeItem('userAuth');
+      localStorage.setItem('activeAuthType', 'partner');
+      window.dispatchEvent(new CustomEvent('authChanged'));
+      setSubmitSuccess('Partner account created successfully. Redirecting to partner dashboard...');
+      setTimeout(() => navigate('/partner/dashboard'), 900);
+    } catch (error) {
+      setSubmitError('Could not connect to backend. Please ensure Django server is running.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -192,6 +261,21 @@ export default function PartnerRegistration() {
                     required
                   />
                 </div>
+
+                <div className="col-md-6 mb-3">
+                  <label className="form-label fw-semibold small" htmlFor="city">
+                    City (optional)
+                  </label>
+                  <input
+                    id="city"
+                    type="text"
+                    className="form-control"
+                    name="city"
+                    placeholder="Enter your city"
+                    value={formData.city}
+                    onChange={handleChange}
+                  />
+                </div>
               </div>
 
               <div className="mb-4">
@@ -212,8 +296,43 @@ export default function PartnerRegistration() {
                 </select>
               </div>
 
-              <button type="submit" className="partner-submit">
-                Submit application
+              <div className="mb-3">
+                <label className="form-label fw-semibold small" htmlFor="password">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  className="form-control"
+                  name="password"
+                  placeholder="Minimum 8 characters"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="form-label fw-semibold small" htmlFor="confirmPassword">
+                  Confirm password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  className="form-control"
+                  name="confirmPassword"
+                  placeholder="Re-enter password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              {submitError && <p className="text-danger small mb-3">{submitError}</p>}
+              {submitSuccess && <p className="text-success small mb-3">{submitSuccess}</p>}
+
+              <button type="submit" className="partner-submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : 'Submit application'}
               </button>
 
               <p className="partner-note text-center mt-3 mb-0 small">

@@ -16,6 +16,7 @@ import EmergencyMode from './Mycomponents/EmergencyMode';
 import UserLogin from './Mycomponents/UserLogin';
 import UserSignup from './Mycomponents/UserSignup';
 import PartnerDashboard from './Mycomponents/PartnerDashboard';
+import PartnerLogin from './Mycomponents/PartnerLogin';
 import ServiceConfigModal from './Mycomponents/ServiceConfigModal';
 
 function App() {
@@ -110,6 +111,7 @@ function App() {
           <Route path="/login" element={<UserLogin />} />
           <Route path="/signup" element={<UserSignup />} />
           <Route path="/partner/dashboard" element={<PartnerDashboard />} />
+          <Route path="/partner/login" element={<PartnerLogin />} />
           <Route path="/partner" element={<PartnerRegistration />} />
         </Routes>
         <Footer />

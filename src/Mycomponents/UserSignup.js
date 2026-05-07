@@ -1,14 +1,53 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function UserSignup() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [username, setUsername] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/signup/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          confirm_password: confirmPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('userAuth', JSON.stringify(data));
+        localStorage.removeItem('partnerAuth');
+        localStorage.setItem('activeAuthType', 'user');
+        window.dispatchEvent(new CustomEvent('authChanged'));
+        alert('Signup successful.');
+        setUsername('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setRememberMe(false);
+        navigate('/');
+      } else {
+        const errorText = typeof data === 'object' ? JSON.stringify(data) : 'Signup failed.';
+        alert(errorText);
+      }
+    } catch (error) {
+      alert('Could not connect to backend. Please ensure Django server is running.');
+    }
   };
 
   return (
@@ -77,6 +116,21 @@ export default function UserSignup() {
 
               <form className="login-form" onSubmit={handleSubmit}>
                 <div className="mb-3">
+                  <label className="form-label fw-semibold" htmlFor="signup-username">
+                    Username
+                  </label>
+                  <input
+                    id="signup-username"
+                    type="text"
+                    className="form-control"
+                    placeholder="Choose a username"
+                    value={username}
+                    onChange={(event) => setUsername(event.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="mb-3">
                   <label className="form-label fw-semibold" htmlFor="signup-email">
                     Email address
                   </label>
@@ -87,6 +141,7 @@ export default function UserSignup() {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
+                    required
                   />
                 </div>
 
@@ -102,6 +157,7 @@ export default function UserSignup() {
                       placeholder="Create a password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
+                      required
                     />
                     <button
                       type="button"
@@ -113,6 +169,21 @@ export default function UserSignup() {
                       <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
                     </button>
                   </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-semibold" htmlFor="signup-confirm-password">
+                    Confirm Password
+                  </label>
+                  <input
+                    id="signup-confirm-password"
+                    type={showPassword ? "text" : "password"}
+                    className="form-control"
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    required
+                  />
                 </div>
 
                 <div className="login-form-row">

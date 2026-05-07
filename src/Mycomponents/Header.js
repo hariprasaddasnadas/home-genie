@@ -3,6 +3,48 @@ import { Link, useNavigate } from 'react-router-dom';
 import './navbar.css';
 import { services } from '../data';
 
+const EMPTY_AUTH_STATE = { role: null, username: '', email: '' };
+
+const getAuthStateFromStorage = () => {
+  try {
+    const activeAuthType = localStorage.getItem('activeAuthType');
+    const parseAuth = (key) => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch (error) {
+        return null;
+      }
+    };
+
+    const buildAccount = (role, payload) => ({
+      role,
+      username: payload?.user?.username || payload?.partner_profile?.full_name || 'Account',
+      email: payload?.user?.email || '',
+    });
+
+    const userAuth = parseAuth('userAuth');
+    const partnerAuth = parseAuth('partnerAuth');
+
+    if (activeAuthType === 'partner' && partnerAuth?.user) {
+      return buildAccount('partner', partnerAuth);
+    }
+    if (activeAuthType === 'user' && userAuth?.user) {
+      return buildAccount('user', userAuth);
+    }
+    if (partnerAuth?.user) {
+      return buildAccount('partner', partnerAuth);
+    }
+    if (userAuth?.user) {
+      return buildAccount('user', userAuth);
+    }
+    return EMPTY_AUTH_STATE;
+  } catch (error) {
+    return EMPTY_AUTH_STATE;
+  }
+};
+
 export default function Header({
   cartCount = 0,
   addToCart,
@@ -13,7 +55,9 @@ export default function Header({
 }) {
   const [query, setQuery] = useState('');
   const [isLoginMenuOpen, setIsLoginMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const [authState, setAuthState] = useState(getAuthStateFromStorage);
 
   useEffect(() => {
     const handleOtherSearch = () => setQuery('');
@@ -22,12 +66,35 @@ export default function Header({
   }, []);
 
   useEffect(() => {
-    const handleDocumentClick = () => setIsLoginMenuOpen(false);
-    if (isLoginMenuOpen) {
+    const handleDocumentClick = () => {
+      setIsLoginMenuOpen(false);
+      setIsProfileMenuOpen(false);
+    };
+    if (isLoginMenuOpen || isProfileMenuOpen) {
       document.addEventListener('click', handleDocumentClick);
     }
     return () => document.removeEventListener('click', handleDocumentClick);
-  }, [isLoginMenuOpen]);
+  }, [isLoginMenuOpen, isProfileMenuOpen]);
+
+  useEffect(() => {
+    const syncAuthState = () => setAuthState(getAuthStateFromStorage());
+    window.addEventListener('authChanged', syncAuthState);
+    window.addEventListener('storage', syncAuthState);
+    return () => {
+      window.removeEventListener('authChanged', syncAuthState);
+      window.removeEventListener('storage', syncAuthState);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('userAuth');
+    localStorage.removeItem('partnerAuth');
+    localStorage.removeItem('activeAuthType');
+    setAuthState(EMPTY_AUTH_STATE);
+    setIsProfileMenuOpen(false);
+    window.dispatchEvent(new CustomEvent('authChanged'));
+    navigate('/');
+  };
 
   const filteredServices = query
     ? services.filter((service) => {
@@ -122,8 +189,23 @@ export default function Header({
                           </div>
                         </div>
                         <div className="d-flex gap-2">
-                          <button type="button" className="btn btn-sm btn-outline-primary rounded-pill px-3" onClick={() => { addToCart && addToCart(service); setQuery(''); }}>Add to cart</button>
-                          <button type="button" className="btn btn-sm btn-primary rounded-pill px-3" style={{ backgroundColor: '#6a38c2', borderColor: '#6a38c2' }} onClick={() => { navigate('/services?service=' + service.slug + (currentPincode ? '&pincode=' + currentPincode : '')); setQuery(''); }}>View in area</button>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-primary rounded-pill px-3"
+                            style={{ backgroundColor: '#6a38c2', borderColor: '#6a38c2' }}
+                            onClick={() => {
+                              const params = new URLSearchParams();
+                              params.set('service', service.slug);
+                              params.set('search', query.trim() || service.name);
+                              if (currentPincode) {
+                                params.set('pincode', currentPincode);
+                              }
+                              navigate(`/services?${params.toString()}`);
+                              setQuery('');
+                            }}
+                          >
+                            View partners
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -162,58 +244,104 @@ export default function Header({
               </span>
             </Link>
 
-            <Link to="/signup" className="btn-login border-0 rounded-4 d-inline-flex align-items-center justify-content-center text-decoration-none fw-semibold ms-1 me-2" style={{ fontSize: '0.95rem' }}>
-              Sign Up
-            </Link>
-
-            <div className="login-menu-wrapper ms-1">
-              <button
-                type="button"
-                className="btn-login border-0 rounded-4 d-inline-flex align-items-center gap-2"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setIsLoginMenuOpen((prev) => !prev);
-                }}
-                aria-expanded={isLoginMenuOpen}
-                aria-haspopup="menu"
+            {authState.role ? (
+              <div
+                className="profile-menu-wrapper ms-1"
+                onMouseEnter={() => setIsProfileMenuOpen(true)}
+                onMouseLeave={() => setIsProfileMenuOpen(false)}
               >
-                Login
-                <i className={`bi ${isLoginMenuOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
-              </button>
-
-              {isLoginMenuOpen && (
-                <div
-                  className="login-menu-dropdown"
-                  role="menu"
-                  onClick={(event) => event.stopPropagation()}
+                <button
+                  type="button"
+                  className="profile-trigger"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setIsProfileMenuOpen((prev) => !prev);
+                  }}
+                  aria-expanded={isProfileMenuOpen}
+                  aria-haspopup="menu"
+                  aria-label="Profile options"
                 >
+                  <i className={`bi ${authState.role === 'partner' ? 'bi-person-workspace' : 'bi-person-circle'}`}></i>
+                </button>
+                {isProfileMenuOpen && (
+                  <div
+                    className="profile-menu-dropdown"
+                    role="menu"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <p className="profile-menu-label mb-1">
+                      {authState.role === 'partner' ? 'Partner account' : 'User account'}
+                    </p>
+                    <p className="profile-menu-name mb-1">{authState.username || 'User'}</p>
+                    <p className="profile-menu-email mb-3">{authState.email || 'No email found'}</p>
+                    <button
+                      type="button"
+                      className="login-menu-item"
+                      role="menuitem"
+                      onClick={handleLogout}
+                    >
+                      <i className="bi bi-box-arrow-right"></i>
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link to="/signup" className="btn-login border-0 rounded-4 d-inline-flex align-items-center justify-content-center text-decoration-none fw-semibold ms-1 me-2" style={{ fontSize: '0.95rem' }}>
+                  Sign Up
+                </Link>
+
+                <div className="login-menu-wrapper ms-1">
                   <button
                     type="button"
-                    className="login-menu-item"
-                    role="menuitem"
-                    onClick={() => {
-                      setIsLoginMenuOpen(false);
-                      navigate('/login');
+                    className="btn-login border-0 rounded-4 d-inline-flex align-items-center gap-2"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setIsLoginMenuOpen((prev) => !prev);
                     }}
+                    aria-expanded={isLoginMenuOpen}
+                    aria-haspopup="menu"
                   >
-                    <i className="bi bi-person-circle"></i>
-                    User login
+                    Login
+                    <i className={`bi ${isLoginMenuOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
                   </button>
-                  <button
-                    type="button"
-                    className="login-menu-item"
-                    role="menuitem"
-                    onClick={() => {
-                      setIsLoginMenuOpen(false);
-                      navigate('/partner/dashboard');
-                    }}
-                  >
-                    <i className="bi bi-briefcase"></i>
-                    Partner login
-                  </button>
+
+                  {isLoginMenuOpen && (
+                    <div
+                      className="login-menu-dropdown"
+                      role="menu"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        className="login-menu-item"
+                        role="menuitem"
+                        onClick={() => {
+                          setIsLoginMenuOpen(false);
+                          navigate('/login');
+                        }}
+                      >
+                        <i className="bi bi-person-circle"></i>
+                        User login
+                      </button>
+                      <button
+                        type="button"
+                        className="login-menu-item"
+                        role="menuitem"
+                        onClick={() => {
+                          setIsLoginMenuOpen(false);
+                          navigate('/partner/login');
+                        }}
+                      >
+                        <i className="bi bi-briefcase"></i>
+                        Partner login
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
       </div>

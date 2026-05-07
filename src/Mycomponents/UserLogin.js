@@ -1,14 +1,44 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function UserLogin() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('userAuth', JSON.stringify(data));
+        localStorage.removeItem('partnerAuth');
+        localStorage.setItem('activeAuthType', 'user');
+        window.dispatchEvent(new CustomEvent('authChanged'));
+        alert('Login successful.');
+        navigate('/');
+      } else {
+        const errorText = typeof data === 'object' ? JSON.stringify(data) : 'Login failed.';
+        alert(errorText);
+      }
+    } catch (error) {
+      alert('Could not connect to backend. Please ensure Django server is running.');
+    }
   };
 
   return (
@@ -87,6 +117,7 @@ export default function UserLogin() {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
+                    required
                   />
                 </div>
 
@@ -102,6 +133,7 @@ export default function UserLogin() {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
+                      required
                     />
                     <button
                       type="button"
