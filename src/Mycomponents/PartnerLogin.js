@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiUrl } from '../api';
+import { apiUrl, extractApiError } from '../api';
 
 export default function PartnerLogin() {
   const navigate = useNavigate();
@@ -26,8 +26,7 @@ export default function PartnerLogin() {
 
       const data = await response.json();
       if (!response.ok) {
-        const errorText = data.detail || Object.values(data)[0]?.[0] || 'Partner login failed.';
-        setSubmitError(errorText);
+        setSubmitError(extractApiError(data, 'Partner login failed.'));
         return;
       }
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiUrl } from '../api';
+import { apiUrl, extractApiError } from '../api';
 
 export default function UserSignup() {
   const navigate = useNavigate();
@@ -16,6 +16,14 @@ export default function UserSignup() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitError('');
+    if (password !== confirmPassword) {
+      setSubmitError('Passwords do not match.');
+      return;
+    }
+    if (password.length < 8) {
+      setSubmitError('Password must be at least 8 characters long.');
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -46,7 +54,7 @@ export default function UserSignup() {
         setRememberMe(false);
         navigate('/my-bookings');
       } else {
-        setSubmitError(data.detail || Object.values(data)[0]?.[0] || 'Signup failed.');
+        setSubmitError(extractApiError(data, 'Signup failed.'));
       }
     } catch (error) {
       setSubmitError('Could not connect to backend. Please ensure Django server is running.');

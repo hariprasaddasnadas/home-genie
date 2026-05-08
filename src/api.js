@@ -61,3 +61,20 @@ export const fetchJson = async (path, options = {}) => {
   const data = await response.json().catch(() => ({}));
   return { response, data };
 };
+
+export const extractApiError = (data, fallbackMessage = 'Something went wrong.') => {
+  if (!data) return fallbackMessage;
+  if (typeof data === 'string') return data;
+  if (Array.isArray(data)) return data[0] || fallbackMessage;
+  if (typeof data.detail === 'string') return data.detail;
+  if (Array.isArray(data.non_field_errors) && data.non_field_errors.length > 0) {
+    return data.non_field_errors[0];
+  }
+
+  for (const value of Object.values(data)) {
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value) && value.length > 0) return value[0];
+  }
+
+  return fallbackMessage;
+};

@@ -106,11 +106,15 @@ class PartnerBookingRequest(models.Model):
 class CustomerBooking(models.Model):
     STATUS_PENDING = "pending"
     STATUS_CONFIRMED = "confirmed"
+    STATUS_SCHEDULED = "scheduled"
+    STATUS_IN_PROGRESS = "in_progress"
     STATUS_COMPLETED = "completed"
     STATUS_CANCELLED = "cancelled"
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
         (STATUS_CONFIRMED, "Confirmed"),
+        (STATUS_SCHEDULED, "Scheduled"),
+        (STATUS_IN_PROGRESS, "In Progress"),
         (STATUS_COMPLETED, "Completed"),
         (STATUS_CANCELLED, "Cancelled"),
     ]
@@ -120,6 +124,16 @@ class CustomerBooking(models.Model):
     PAYMENT_CHOICES = [
         (PAYMENT_ONLINE, "Online"),
         (PAYMENT_COD, "Cash on Delivery"),
+    ]
+    PAYMENT_STATE_PENDING = "pending"
+    PAYMENT_STATE_AUTHORIZED = "authorized"
+    PAYMENT_STATE_CAPTURED = "captured"
+    PAYMENT_STATE_FAILED = "failed"
+    PAYMENT_STATE_CHOICES = [
+        (PAYMENT_STATE_PENDING, "Pending"),
+        (PAYMENT_STATE_AUTHORIZED, "Authorized"),
+        (PAYMENT_STATE_CAPTURED, "Captured"),
+        (PAYMENT_STATE_FAILED, "Failed"),
     ]
 
     user = models.ForeignKey(
@@ -146,6 +160,15 @@ class CustomerBooking(models.Model):
     payment_method = models.CharField(
         max_length=20, choices=PAYMENT_CHOICES, default=PAYMENT_COD
     )
+    payment_state = models.CharField(
+        max_length=20,
+        choices=PAYMENT_STATE_CHOICES,
+        default=PAYMENT_STATE_PENDING,
+    )
+    checkout_group = models.CharField(max_length=64, blank=True, db_index=True)
+    gateway_order_id = models.CharField(max_length=80, blank=True, db_index=True)
+    gateway_payment_id = models.CharField(max_length=80, blank=True)
+    gateway_signature = models.CharField(max_length=255, blank=True)
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default=STATUS_CONFIRMED
     )

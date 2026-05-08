@@ -3,6 +3,8 @@ from django.urls import path
 from .views import (
     CustomerBookingCreateView,
     CustomerBookingListView,
+    RazorpayCreateOrderView,
+    RazorpayVerifyPaymentView,
     ServiceCatalogListView,
     SignUpView,
     LoginView,
@@ -25,6 +27,8 @@ urlpatterns = [
     path("partners/", PartnerListView.as_view(), name="partner-list"),
     path("bookings/", CustomerBookingCreateView.as_view(), name="customer-booking-create"),
     path("bookings/my/", CustomerBookingListView.as_view(), name="customer-booking-list"),
+    path("payments/razorpay/order/", RazorpayCreateOrderView.as_view(), name="razorpay-create-order"),
+    path("payments/razorpay/verify/", RazorpayVerifyPaymentView.as_view(), name="razorpay-verify-payment"),
     path("partner/book/", PartnerBookingRequestView.as_view(), name="partner-book"),
     path("partner/requests/", PartnerRequestListView.as_view(), name="partner-requests"),
     path("partner/request-action/", PartnerBookingStatusUpdateView.as_view(), name="partner-request-action"),

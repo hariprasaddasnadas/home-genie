@@ -1,6 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { authHeaders, fetchJson, getAuthState } from '../api';
+import { authHeaders, extractApiError, fetchJson, getAuthState } from '../api';
+
+const loadRazorpayScript = () =>
+  new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+
+    const existingScript = document.querySelector('script[data-razorpay-checkout="true"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(true), { once: true });
+      existingScript.addEventListener('error', () => resolve(false), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.dataset.razorpayCheckout = 'true';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 
 export default function Checkout({ cartItems = [], clearCart, showToast }) {
   const location = useLocation();
@@ -34,6 +57,7 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const authState = getAuthState();
 
   // Load saved address on mount
@@ -50,10 +74,39 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
+    const normalizedValue = name === 'phone' || name === 'pincode'
+      ? value.replace(/\D/g, '')
+      : value;
     setAddress((prev) => ({
       ...prev,
-      [name]: value
+      [name]: normalizedValue
     }));
+    setFieldErrors((current) => ({ ...current, [name]: '' }));
+  };
+
+  const validateAddress = () => {
+    const nextErrors = {};
+    if (!address.fullName.trim()) nextErrors.fullName = 'Please enter your full name.';
+    if (!/^\d{10}$/.test(address.phone)) nextErrors.phone = 'Phone number must be exactly 10 digits.';
+    if (!address.street.trim()) nextErrors.street = 'Please enter your street or area.';
+    if (!address.city.trim()) nextErrors.city = 'Please enter your city.';
+    if (!/^\d{6}$/.test(address.pincode)) nextErrors.pincode = 'Pincode must be exactly 6 digits.';
+    setFieldErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const bookingItemsPayload = itemsToCheckout.map((item) => ({
+    service_id: item.id,
+    configured_price: parseInt(item.price, 10),
+    config_options: item.configOptions || location.state?.configOptions || {},
+  }));
+
+  const bookingCustomerPayload = {
+    customer_name: address.fullName,
+    customer_phone: address.phone,
+    street: address.street,
+    city: address.city,
+    pincode: address.pincode,
   };
 
   const submitBooking = async () => {
@@ -63,6 +116,9 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
     }
 
     setSubmitError('');
+    if (!validateAddress()) {
+      return;
+    }
     setIsSubmitting(true);
     try {
       for (const item of itemsToCheckout) {
@@ -70,11 +126,7 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
           service_id: item.id,
           configured_price: parseInt(item.price, 10),
           config_options: item.configOptions || location.state?.configOptions || {},
-          customer_name: address.fullName,
-          customer_phone: address.phone,
-          street: address.street,
-          city: address.city,
-          pincode: address.pincode,
+          ...bookingCustomerPayload,
           payment_method: paymentMethod,
         };
 
@@ -85,7 +137,7 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
         });
 
         if (!response.ok) {
-          setSubmitError(data.detail || Object.values(data)[0]?.[0] || 'Could not confirm your booking.');
+          setSubmitError(extractApiError(data, 'Could not confirm your booking.'));
           return;
         }
       }
@@ -103,8 +155,113 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
     }
   };
 
+  const verifyOnlinePayment = async (paymentResponse) => {
+      const { response, data } = await fetchJson('/api/payments/razorpay/verify/', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(paymentResponse),
+    });
+    if (!response.ok) {
+      throw new Error(extractApiError(data, 'Payment verification failed.'));
+    }
+  };
+
+  const startOnlinePayment = async () => {
+    if (!authState.token || authState.role !== 'user') {
+      navigate('/login', { state: { from: '/checkout' } });
+      return;
+    }
+
+    setSubmitError('');
+    if (!validateAddress()) {
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        setSubmitError('Could not load the payment gateway. Please check your internet connection and try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { response, data } = await fetchJson('/api/payments/razorpay/order/', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          items: bookingItemsPayload,
+          ...bookingCustomerPayload,
+        }),
+      });
+
+      if (!response.ok) {
+        setSubmitError(extractApiError(data, 'Could not start online payment.'));
+        setIsSubmitting(false);
+        return;
+      }
+
+      const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'HomeGenie',
+        description: itemsToCheckout.length > 1 ? 'Home services checkout' : `${itemsToCheckout[0]?.name || 'Home service'} booking`,
+        order_id: data.order_id,
+        image: 'https://images.pexels.com/photos/6474475/pexels-photo-6474475.jpeg?auto=compress&cs=tinysrgb&w=200',
+        handler: async (paymentResponse) => {
+          try {
+            await verifyOnlinePayment(paymentResponse);
+            localStorage.setItem('hg_user_address', JSON.stringify(address));
+            if (!isSingleCheckout) {
+              clearCart();
+            }
+            showToast('Payment successful and booking confirmed!', 'success');
+            navigate('/my-bookings');
+          } catch (error) {
+            setSubmitError(error.message || 'Payment verification failed.');
+          } finally {
+            setIsSubmitting(false);
+          }
+        },
+        prefill: {
+          name: address.fullName,
+          email: authState.email,
+          contact: address.phone,
+        },
+        notes: {
+          city: address.city,
+          pincode: address.pincode,
+        },
+        theme: {
+          color: '#6a38c2',
+        },
+        modal: {
+          ondismiss: () => {
+            setIsSubmitting(false);
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.on('payment.failed', (failureResponse) => {
+        setSubmitError(
+          failureResponse?.error?.description || 'Payment was not completed. Please try again.'
+        );
+        setIsSubmitting(false);
+      });
+      razorpay.open();
+    } catch (error) {
+      setSubmitError('Could not connect to backend. Please ensure Django server is running.');
+      setIsSubmitting(false);
+    }
+  };
+
   const handleFormSubmit = async (event) => {
     event.preventDefault();
+    if (paymentMethod === 'online') {
+      await startOnlinePayment();
+      return;
+    }
     await submitBooking();
   };
 
@@ -135,22 +292,27 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
                 <div className="col-md-6">
                   <label className="form-label fw-semibold small text-muted">Full Name</label>
                   <input type="text" className="form-control" name="fullName" value={address.fullName} onChange={handleAddressChange} required />
+                  {fieldErrors.fullName && <div className="text-danger small mt-1">{fieldErrors.fullName}</div>}
                 </div>
                 <div className="col-md-6">
                   <label className="form-label fw-semibold small text-muted">Mobile Number</label>
-                  <input type="tel" className="form-control" name="phone" value={address.phone} onChange={handleAddressChange} required />
+                  <input type="tel" className="form-control" name="phone" maxLength="10" value={address.phone} onChange={handleAddressChange} required />
+                  {fieldErrors.phone && <div className="text-danger small mt-1">{fieldErrors.phone}</div>}
                 </div>
                 <div className="col-12">
                   <label className="form-label fw-semibold small text-muted">Street / Flat / Area</label>
                   <input type="text" className="form-control" name="street" value={address.street} onChange={handleAddressChange} required />
+                  {fieldErrors.street && <div className="text-danger small mt-1">{fieldErrors.street}</div>}
                 </div>
                 <div className="col-md-6">
                   <label className="form-label fw-semibold small text-muted">City</label>
                   <input type="text" className="form-control" name="city" value={address.city} onChange={handleAddressChange} required />
+                  {fieldErrors.city && <div className="text-danger small mt-1">{fieldErrors.city}</div>}
                 </div>
                 <div className="col-md-6">
                   <label className="form-label fw-semibold small text-muted">Pincode</label>
-                  <input type="text" className="form-control" name="pincode" value={address.pincode} onChange={handleAddressChange} required />
+                  <input type="text" className="form-control" name="pincode" maxLength="6" value={address.pincode} onChange={handleAddressChange} required />
+                  {fieldErrors.pincode && <div className="text-danger small mt-1">{fieldErrors.pincode}</div>}
                 </div>
               </div>
               {submitError && <p className="text-danger small mt-3 mb-0">{submitError}</p>}
@@ -230,7 +392,7 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
               className="btn-book w-100 py-3 rounded-4 shadow-sm fs-6" 
               style={{ background: '#6a38c2', color: 'white' }}
             >
-              {isSubmitting ? 'Confirming...' : 'Confirm Booking'}
+              {isSubmitting ? 'Processing...' : paymentMethod === 'online' ? 'Pay & Confirm Booking' : 'Confirm Booking'}
             </button>
             <p className="text-center text-muted small mt-3 mb-0">By confirming, you agree to our terms of service.</p>
           </div>

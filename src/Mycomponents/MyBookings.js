@@ -90,6 +90,7 @@ export default function MyBookings() {
                     </div>
                     <h3>{booking.service_name}</h3>
                     <p className="mb-1"><strong>Status:</strong> {booking.status}</p>
+                    <p className="mb-1"><strong>Payment status:</strong> {booking.payment_state}</p>
                     <p className="mb-1"><strong>Payment:</strong> {booking.payment_method === 'online' ? 'Online payment' : 'Cash on delivery'}</p>
                     <p className="mb-1"><strong>Address:</strong> {booking.street}, {booking.city} - {booking.pincode}</p>
                     <p className="service-extra mb-0">

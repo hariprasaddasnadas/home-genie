@@ -1,13 +1,8 @@
 from django.contrib.auth.models import User
 from django.db import transaction
 from rest_framework import serializers
-from .models import (
-    CustomerBooking,
-    PartnerBookingRequest,
-    PartnerProfile,
-    PartnerServiceOffering,
-    ServiceCatalog,
-)
+from .models import CustomerBooking, PartnerBookingRequest, PartnerProfile, PartnerServiceOffering, ServiceCatalog
+import uuid
 
 
 class SignUpSerializer(serializers.Serializer):
@@ -131,14 +126,14 @@ class CustomerBookingCreateSerializer(serializers.Serializer):
 
     def validate_customer_phone(self, value):
         digits = "".join(ch for ch in value if ch.isdigit())
-        if len(digits) < 10:
-            raise serializers.ValidationError("Please enter a valid phone number.")
+        if len(digits) != 10:
+            raise serializers.ValidationError("Phone number must be exactly 10 digits.")
         return digits
 
     def validate_pincode(self, value):
         digits = "".join(ch for ch in value if ch.isdigit())
-        if len(digits) < 6:
-            raise serializers.ValidationError("Please enter a valid pincode.")
+        if len(digits) != 6:
+            raise serializers.ValidationError("Pincode must be exactly 6 digits.")
         return digits
 
     def validate(self, attrs):
@@ -147,6 +142,29 @@ class CustomerBookingCreateSerializer(serializers.Serializer):
         if available_pincodes and attrs["pincode"] not in available_pincodes:
             raise serializers.ValidationError(
                 {"pincode": "This service is not available in the selected pincode yet."}
+            )
+        request = self.context["request"]
+        duplicate_exists = CustomerBooking.objects.filter(
+            user=request.user,
+            service=service,
+            customer_phone=attrs["customer_phone"],
+            street__iexact=attrs["street"].strip(),
+            city__iexact=attrs["city"].strip(),
+            pincode=attrs["pincode"],
+            status__in=[
+                CustomerBooking.STATUS_PENDING,
+                CustomerBooking.STATUS_CONFIRMED,
+                CustomerBooking.STATUS_SCHEDULED,
+                CustomerBooking.STATUS_IN_PROGRESS,
+            ],
+        ).exists()
+        if duplicate_exists:
+            raise serializers.ValidationError(
+                {
+                    "non_field_errors": [
+                        "An active booking for this service already exists for the same address."
+                    ]
+                }
             )
         attrs["service"] = service
         return attrs
@@ -169,8 +187,122 @@ class CustomerBookingCreateSerializer(serializers.Serializer):
             city=validated_data["city"],
             pincode=validated_data["pincode"],
             payment_method=validated_data["payment_method"],
-            status=CustomerBooking.STATUS_CONFIRMED,
+            payment_state=(
+                CustomerBooking.PAYMENT_STATE_CAPTURED
+                if validated_data["payment_method"] == CustomerBooking.PAYMENT_COD
+                else CustomerBooking.PAYMENT_STATE_PENDING
+            ),
+            status=(
+                CustomerBooking.STATUS_CONFIRMED
+                if validated_data["payment_method"] == CustomerBooking.PAYMENT_COD
+                else CustomerBooking.STATUS_PENDING
+            ),
         )
+
+
+class CheckoutItemSerializer(serializers.Serializer):
+    service_id = serializers.IntegerField()
+    configured_price = serializers.IntegerField(min_value=1)
+    config_options = serializers.JSONField(required=False)
+
+    def validate_service_id(self, value):
+        if not ServiceCatalog.objects.filter(id=value, is_active=True).exists():
+            raise serializers.ValidationError("Selected service is not available.")
+        return value
+
+    def validate(self, attrs):
+        service = ServiceCatalog.objects.get(id=attrs["service_id"])
+        attrs["service"] = service
+        return attrs
+
+
+class RazorpayOrderCreateSerializer(serializers.Serializer):
+    items = CheckoutItemSerializer(many=True)
+    customer_name = serializers.CharField(max_length=120)
+    customer_phone = serializers.CharField(max_length=20)
+    street = serializers.CharField(max_length=255)
+    city = serializers.CharField(max_length=100)
+    pincode = serializers.CharField(max_length=10)
+
+    def validate_customer_phone(self, value):
+        digits = "".join(ch for ch in value if ch.isdigit())
+        if len(digits) != 10:
+            raise serializers.ValidationError("Phone number must be exactly 10 digits.")
+        return digits
+
+    def validate_pincode(self, value):
+        digits = "".join(ch for ch in value if ch.isdigit())
+        if len(digits) != 6:
+            raise serializers.ValidationError("Pincode must be exactly 6 digits.")
+        return digits
+
+    def validate(self, attrs):
+        pincode = attrs["pincode"]
+        for item in attrs["items"]:
+            service = item["service"]
+            available_pincodes = service.available_pincodes or []
+            if available_pincodes and pincode not in available_pincodes:
+                raise serializers.ValidationError(
+                    {"pincode": f"{service.name} is not available in the selected pincode yet."}
+                )
+            duplicate_exists = CustomerBooking.objects.filter(
+                user=self.context["request"].user,
+                service=service,
+                customer_phone=attrs["customer_phone"],
+                street__iexact=attrs["street"].strip(),
+                city__iexact=attrs["city"].strip(),
+                pincode=attrs["pincode"],
+                status__in=[
+                    CustomerBooking.STATUS_PENDING,
+                    CustomerBooking.STATUS_CONFIRMED,
+                    CustomerBooking.STATUS_SCHEDULED,
+                    CustomerBooking.STATUS_IN_PROGRESS,
+                ],
+            ).exists()
+            if duplicate_exists:
+                raise serializers.ValidationError(
+                    {"non_field_errors": [f"An active booking for {service.name} already exists for this address."]}
+                )
+        return attrs
+
+
+class RazorpayPaymentVerifySerializer(serializers.Serializer):
+    razorpay_order_id = serializers.CharField(max_length=80)
+    razorpay_payment_id = serializers.CharField(max_length=80)
+    razorpay_signature = serializers.CharField(max_length=255)
+
+
+def create_pending_online_bookings(*, user, validated_data, checkout_group, gateway_order_id):
+    bookings = []
+    for item in validated_data["items"]:
+        service = item["service"]
+        bookings.append(
+            CustomerBooking.objects.create(
+                user=user,
+                service=service,
+                service_name=service.name,
+                service_slug=service.slug,
+                service_image=service.image,
+                service_category=service.category,
+                configured_price=item["configured_price"],
+                config_options=item.get("config_options", {}),
+                customer_name=validated_data["customer_name"],
+                customer_phone=validated_data["customer_phone"],
+                street=validated_data["street"],
+                city=validated_data["city"],
+                pincode=validated_data["pincode"],
+                payment_method=CustomerBooking.PAYMENT_ONLINE,
+                payment_state=CustomerBooking.PAYMENT_STATE_PENDING,
+                checkout_group=checkout_group,
+                gateway_order_id=gateway_order_id,
+                status=CustomerBooking.STATUS_PENDING,
+            )
+        )
+    return bookings
+
+
+def new_checkout_group():
+    return uuid.uuid4().hex
 
 
 class CustomerBookingSerializer(serializers.ModelSerializer):
@@ -190,7 +322,10 @@ class CustomerBookingSerializer(serializers.ModelSerializer):
             "city",
             "pincode",
             "payment_method",
+            "payment_state",
             "status",
+            "gateway_order_id",
+            "gateway_payment_id",
             "created_at",
         ]
 

@@ -19,6 +19,7 @@ import PartnerDashboard from './Mycomponents/PartnerDashboard';
 import PartnerLogin from './Mycomponents/PartnerLogin';
 import ServiceConfigModal from './Mycomponents/ServiceConfigModal';
 import MyBookings from './Mycomponents/MyBookings';
+import ProtectedRoute from './Mycomponents/ProtectedRoute';
 
 function App() {
   const [cartItems, setCartItems] = useState(() => {
@@ -111,7 +112,14 @@ function App() {
             }
           />
           <Route path="/cart" element={<Cart cartItems={cartItems} removeFromCart={removeFromCart} />} />
-          <Route path="/checkout" element={<Checkout cartItems={cartItems} clearCart={clearCart} showToast={showToast} />} />
+          <Route
+            path="/checkout"
+            element={(
+              <ProtectedRoute allow="user" redirectTo="/login">
+                <Checkout cartItems={cartItems} clearCart={clearCart} showToast={showToast} />
+              </ProtectedRoute>
+            )}
+          />
           <Route path="/about" element={<About />} />
           <Route path="/services" element={<Services currentPincode={currentPincode} />} />
           <Route path="/contact" element={<Contact />} />
@@ -122,8 +130,22 @@ function App() {
           />
           <Route path="/login" element={<UserLogin />} />
           <Route path="/signup" element={<UserSignup />} />
-          <Route path="/my-bookings" element={<MyBookings />} />
-          <Route path="/partner/dashboard" element={<PartnerDashboard />} />
+          <Route
+            path="/my-bookings"
+            element={(
+              <ProtectedRoute allow="user" redirectTo="/login">
+                <MyBookings />
+              </ProtectedRoute>
+            )}
+          />
+          <Route
+            path="/partner/dashboard"
+            element={(
+              <ProtectedRoute allow="partner" redirectTo="/partner/login">
+                <PartnerDashboard />
+              </ProtectedRoute>
+            )}
+          />
           <Route path="/partner/login" element={<PartnerLogin />} />
           <Route path="/partner" element={<PartnerRegistration />} />
         </Routes>

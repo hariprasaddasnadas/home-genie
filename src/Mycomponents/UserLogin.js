@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { apiUrl } from '../api';
+import { apiUrl, extractApiError } from '../api';
 
 export default function UserLogin() {
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ export default function UserLogin() {
         window.dispatchEvent(new CustomEvent('authChanged'));
         navigate(redirectPath);
       } else {
-        setSubmitError(data.detail || Object.values(data)[0]?.[0] || 'Login failed.');
+        setSubmitError(extractApiError(data, 'Login failed.'));
       }
     } catch (error) {
       setSubmitError('Could not connect to backend. Please ensure Django server is running.');

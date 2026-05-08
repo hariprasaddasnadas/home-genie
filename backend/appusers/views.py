@@ -1,3 +1,10 @@
+import base64
+import hashlib
+import hmac
+import json
+import os
+from urllib import error, request as urllib_request
+
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework import status
@@ -17,6 +24,8 @@ from .models import (
 from .serializers import (
     CustomerBookingCreateSerializer,
     CustomerBookingSerializer,
+    RazorpayOrderCreateSerializer,
+    RazorpayPaymentVerifySerializer,
     SignUpSerializer,
     LoginSerializer,
     PartnerSignUpSerializer,
@@ -25,6 +34,8 @@ from .serializers import (
     PartnerBookingStatusUpdateSerializer,
     PartnerServiceOfferingSerializer,
     ServiceCatalogSerializer,
+    create_pending_online_bookings,
+    new_checkout_group,
 )
 
 
@@ -55,6 +66,45 @@ def build_partner_payload(partner):
         "experience_years": partner.experience_years,
         "is_active_partner": partner.is_active_partner,
     }
+
+
+def get_razorpay_credentials():
+    key_id = os.getenv("RAZORPAY_KEY_ID", "").strip()
+    key_secret = os.getenv("RAZORPAY_KEY_SECRET", "").strip()
+    return key_id, key_secret
+
+
+def razorpay_request(*, method, path, payload):
+    key_id, key_secret = get_razorpay_credentials()
+    if not key_id or not key_secret:
+        raise ValueError("Razorpay credentials are not configured on the server.")
+
+    url = f"https://api.razorpay.com{path}"
+    auth = base64.b64encode(f"{key_id}:{key_secret}".encode("utf-8")).decode("utf-8")
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib_request.Request(
+        url,
+        data=data,
+        method=method,
+        headers={
+            "Authorization": f"Basic {auth}",
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib_request.urlopen(req, timeout=30) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(body) from exc
+
+
+def verify_razorpay_signature(*, order_id, payment_id, signature, key_secret):
+    body = f"{order_id}|{payment_id}".encode("utf-8")
+    expected = hmac.new(
+        key_secret.encode("utf-8"), body, digestmod=hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(expected, signature)
 
 
 class SignUpView(APIView):
@@ -218,6 +268,144 @@ class CustomerBookingCreateView(AuthenticatedAPIView):
                 "booking": CustomerBookingSerializer(booking).data,
             },
             status=status.HTTP_201_CREATED,
+        )
+
+
+class RazorpayCreateOrderView(AuthenticatedAPIView):
+    def post(self, request):
+        serializer = RazorpayOrderCreateSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        key_id, _ = get_razorpay_credentials()
+        if not key_id:
+            return Response(
+                {"detail": "Online payment is not configured yet."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        total_amount = sum(item["configured_price"] for item in validated_data["items"])
+        checkout_group = new_checkout_group()
+        receipt = f"hg_{checkout_group[:20]}"
+
+        try:
+            order = razorpay_request(
+                method="POST",
+                path="/v1/orders",
+                payload={
+                    "amount": total_amount * 100,
+                    "currency": "INR",
+                    "receipt": receipt,
+                    "notes": {
+                        "checkout_group": checkout_group,
+                        "user_id": str(request.user.id),
+                    },
+                },
+            )
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except RuntimeError as exc:
+            return Response(
+                {"detail": "Could not create payment order.", "gateway_error": str(exc)},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        bookings = create_pending_online_bookings(
+            user=request.user,
+            validated_data=validated_data,
+            checkout_group=checkout_group,
+            gateway_order_id=order["id"],
+        )
+
+        return Response(
+            {
+                "message": "Payment order created successfully.",
+                "key": key_id,
+                "amount": order["amount"],
+                "currency": order["currency"],
+                "order_id": order["id"],
+                "checkout_group": checkout_group,
+                "bookings": CustomerBookingSerializer(bookings, many=True).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class RazorpayVerifyPaymentView(AuthenticatedAPIView):
+    def post(self, request):
+        serializer = RazorpayPaymentVerifySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        _, key_secret = get_razorpay_credentials()
+        if not key_secret:
+            return Response(
+                {"detail": "Online payment is not configured yet."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        order_id = validated_data["razorpay_order_id"]
+        payment_id = validated_data["razorpay_payment_id"]
+        signature = validated_data["razorpay_signature"]
+
+        if not verify_razorpay_signature(
+            order_id=order_id,
+            payment_id=payment_id,
+            signature=signature,
+            key_secret=key_secret,
+        ):
+            return Response(
+                {"detail": "Payment signature verification failed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        bookings = list(
+            CustomerBooking.objects.filter(
+                user=request.user,
+                gateway_order_id=order_id,
+                payment_method=CustomerBooking.PAYMENT_ONLINE,
+            )
+        )
+        if not bookings:
+            return Response(
+                {"detail": "No pending bookings found for this payment order."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        total_amount = sum(booking.configured_price for booking in bookings)
+        try:
+            capture_response = razorpay_request(
+                method="POST",
+                path=f"/v1/payments/{payment_id}/capture",
+                payload={"amount": total_amount * 100, "currency": "INR"},
+            )
+        except RuntimeError as exc:
+            return Response(
+                {"detail": "Payment capture failed.", "gateway_error": str(exc)},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        for booking in bookings:
+            booking.gateway_payment_id = payment_id
+            booking.gateway_signature = signature
+            booking.payment_state = capture_response.get(
+                "status", CustomerBooking.PAYMENT_STATE_CAPTURED
+            )
+            booking.status = CustomerBooking.STATUS_CONFIRMED
+            booking.save(
+                update_fields=[
+                    "gateway_payment_id",
+                    "gateway_signature",
+                    "payment_state",
+                    "status",
+                    "updated_at",
+                ]
+            )
+
+        return Response(
+            {
+                "message": "Payment verified and booking confirmed.",
+                "bookings": CustomerBookingSerializer(bookings, many=True).data,
+            },
+            status=status.HTTP_200_OK,
         )
 
 

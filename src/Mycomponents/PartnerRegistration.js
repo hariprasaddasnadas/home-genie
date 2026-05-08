@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiUrl } from '../api';
+import { apiUrl, extractApiError } from '../api';
 
 const benefitItems = [
   {
@@ -79,6 +79,22 @@ export default function PartnerRegistration() {
     setSubmitError('');
     setSubmitSuccess('');
 
+    if (!/^\d{10}$/.test(formData.phone)) {
+      setSubmitError('Mobile number must be exactly 10 digits.');
+      setIsSubmitting(false);
+      return;
+    }
+    if (!/^\d{6}$/.test(formData.pincode)) {
+      setSubmitError('Base pincode must be exactly 6 digits.');
+      setIsSubmitting(false);
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setSubmitError('Passwords do not match.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const response = await fetch(apiUrl('/api/partner/signup/'), {
         method: 'POST',
@@ -100,8 +116,7 @@ export default function PartnerRegistration() {
 
       const data = await response.json();
       if (!response.ok) {
-        const errorText = data.detail || Object.values(data)[0]?.[0] || 'Partner signup failed.';
-        setSubmitError(errorText);
+        setSubmitError(extractApiError(data, 'Partner signup failed.'));
         return;
       }
 

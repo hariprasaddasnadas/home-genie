@@ -56,11 +56,31 @@ Optional backend environment variables:
 - `DJANGO_DEBUG`
 - `DJANGO_ALLOWED_HOSTS`
 - `DJANGO_CORS_ALLOWED_ORIGINS`
+- `DJANGO_CSRF_TRUSTED_ORIGINS`
 - `DATABASE_URL`
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
 
 Optional frontend environment variables:
 
 - `REACT_APP_API_BASE_URL`
+
+## Razorpay test setup
+
+To enable online payments in development:
+
+1. Create Razorpay test API keys from the Razorpay dashboard.
+2. Set `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in your backend environment.
+3. Restart `python backend/manage.py runserver`.
+4. Use the `Online Payment` option during checkout.
+
+For successful test payments, use Razorpay Test Mode from the checkout flow.
+
+## Environment templates
+
+- Backend development template: `backend/.env.example`
+- Frontend production template: `.env.production.example`
+- Deployment notes: `DEPLOYMENT.md`
 
 ## Important routes
 
