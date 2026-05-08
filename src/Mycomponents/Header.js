@@ -1,49 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './navbar.css';
-import { services } from '../data';
+import { getAuthState } from '../api';
+import useCatalogServices from '../useCatalogServices';
 
-const EMPTY_AUTH_STATE = { role: null, username: '', email: '' };
-
-const getAuthStateFromStorage = () => {
-  try {
-    const activeAuthType = localStorage.getItem('activeAuthType');
-    const parseAuth = (key) => {
-      const raw = localStorage.getItem(key);
-      if (!raw) return null;
-      try {
-        return JSON.parse(raw);
-      } catch (error) {
-        return null;
-      }
-    };
-
-    const buildAccount = (role, payload) => ({
-      role,
-      username: payload?.user?.username || payload?.partner_profile?.full_name || 'Account',
-      email: payload?.user?.email || '',
-    });
-
-    const userAuth = parseAuth('userAuth');
-    const partnerAuth = parseAuth('partnerAuth');
-
-    if (activeAuthType === 'partner' && partnerAuth?.user) {
-      return buildAccount('partner', partnerAuth);
-    }
-    if (activeAuthType === 'user' && userAuth?.user) {
-      return buildAccount('user', userAuth);
-    }
-    if (partnerAuth?.user) {
-      return buildAccount('partner', partnerAuth);
-    }
-    if (userAuth?.user) {
-      return buildAccount('user', userAuth);
-    }
-    return EMPTY_AUTH_STATE;
-  } catch (error) {
-    return EMPTY_AUTH_STATE;
-  }
-};
+const EMPTY_AUTH_STATE = { role: null, username: '', email: '', token: '' };
 
 export default function Header({
   cartCount = 0,
@@ -57,7 +18,8 @@ export default function Header({
   const [isLoginMenuOpen, setIsLoginMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const [authState, setAuthState] = useState(getAuthStateFromStorage);
+  const [authState, setAuthState] = useState(getAuthState);
+  const { services } = useCatalogServices();
 
   useEffect(() => {
     const handleOtherSearch = () => setQuery('');
@@ -77,7 +39,7 @@ export default function Header({
   }, [isLoginMenuOpen, isProfileMenuOpen]);
 
   useEffect(() => {
-    const syncAuthState = () => setAuthState(getAuthStateFromStorage());
+    const syncAuthState = () => setAuthState(getAuthState());
     window.addEventListener('authChanged', syncAuthState);
     window.addEventListener('storage', syncAuthState);
     return () => {
@@ -274,6 +236,18 @@ export default function Header({
                     </p>
                     <p className="profile-menu-name mb-1">{authState.username || 'User'}</p>
                     <p className="profile-menu-email mb-3">{authState.email || 'No email found'}</p>
+                    <button
+                      type="button"
+                      className="login-menu-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsProfileMenuOpen(false);
+                        navigate(authState.role === 'partner' ? '/partner/dashboard' : '/my-bookings');
+                      }}
+                    >
+                      <i className={`bi ${authState.role === 'partner' ? 'bi-speedometer2' : 'bi-bag-check'}`}></i>
+                      {authState.role === 'partner' ? 'Partner dashboard' : 'My bookings'}
+                    </button>
                     <button
                       type="button"
                       className="login-menu-item"

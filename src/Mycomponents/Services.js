@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { services } from '../data';
 import ServiceConfigModal from './ServiceConfigModal';
 import { apiUrl } from '../api';
+import useCatalogServices from '../useCatalogServices';
 
 export default function Services({ currentPincode }) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { services } = useCatalogServices();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeService, setActiveService] = useState(null);
   const [partners, setPartners] = useState([]);

@@ -1,19 +1,60 @@
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework import status
-from rest_framework.permissions import AllowAny
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import PartnerProfile, PartnerBookingRequest
+from .models import (
+    CustomerBooking,
+    PartnerBookingRequest,
+    PartnerProfile,
+    PartnerServiceOffering,
+    ServiceCatalog,
+)
 
 from .serializers import (
+    CustomerBookingCreateSerializer,
+    CustomerBookingSerializer,
     SignUpSerializer,
     LoginSerializer,
     PartnerSignUpSerializer,
     PartnerLoginSerializer,
     PartnerBookingRequestSerializer,
     PartnerBookingStatusUpdateSerializer,
+    PartnerServiceOfferingSerializer,
+    ServiceCatalogSerializer,
 )
+
+
+class AuthenticatedAPIView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+
+def build_user_payload(user, token=None):
+    payload = {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+    }
+    if token:
+        payload["token"] = token.key
+    return payload
+
+
+def build_partner_payload(partner):
+    return {
+        "id": partner.id,
+        "full_name": partner.full_name,
+        "phone": partner.phone,
+        "pincode": partner.pincode,
+        "city": partner.city,
+        "service_type": partner.service_type,
+        "experience_years": partner.experience_years,
+        "is_active_partner": partner.is_active_partner,
+    }
 
 
 class SignUpView(APIView):
@@ -23,17 +64,16 @@ class SignUpView(APIView):
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        token, _ = Token.objects.get_or_create(user=user)
         return Response(
             {
                 "message": "Signup successful.",
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                },
+                "user": build_user_payload(user, token),
             },
             status=status.HTTP_201_CREATED,
         )
+
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -57,15 +97,12 @@ class LoginView(APIView):
                 {"detail": "Invalid email or password."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        token, _ = Token.objects.get_or_create(user=user)
 
         return Response(
             {
                 "message": "Login successful.",
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                },
+                "user": build_user_payload(user, token),
             },
             status=status.HTTP_200_OK,
         )
@@ -78,23 +115,12 @@ class PartnerSignUpView(APIView):
         serializer = PartnerSignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user, partner = serializer.save()
+        token, _ = Token.objects.get_or_create(user=user)
         return Response(
             {
                 "message": "Partner signup successful.",
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                },
-                "partner_profile": {
-                    "full_name": partner.full_name,
-                    "phone": partner.phone,
-                    "pincode": partner.pincode,
-                    "city": partner.city,
-                    "service_type": partner.service_type,
-                    "experience_years": partner.experience_years,
-                    "is_active_partner": partner.is_active_partner,
-                },
+                "user": build_user_payload(user, token),
+                "partner_profile": build_partner_payload(partner),
             },
             status=status.HTTP_201_CREATED,
         )
@@ -130,27 +156,25 @@ class PartnerLoginView(APIView):
                 {"detail": "Partner profile not found for this account."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+        token, _ = Token.objects.get_or_create(user=user)
 
         return Response(
             {
                 "message": "Partner login successful.",
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                },
-                "partner_profile": {
-                    "full_name": partner.full_name,
-                    "phone": partner.phone,
-                    "pincode": partner.pincode,
-                    "city": partner.city,
-                    "service_type": partner.service_type,
-                    "experience_years": partner.experience_years,
-                    "is_active_partner": partner.is_active_partner,
-                },
+                "user": build_user_payload(user, token),
+                "partner_profile": build_partner_payload(partner),
             },
             status=status.HTTP_200_OK,
         )
+
+
+class ServiceCatalogListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        queryset = ServiceCatalog.objects.filter(is_active=True)
+        serializer = ServiceCatalogSerializer(queryset, many=True)
+        return Response({"count": len(serializer.data), "results": serializer.data}, status=status.HTTP_200_OK)
 
 
 class PartnerListView(APIView):
@@ -183,6 +207,27 @@ class PartnerListView(APIView):
         return Response({"count": len(partners), "results": partners}, status=status.HTTP_200_OK)
 
 
+class CustomerBookingCreateView(AuthenticatedAPIView):
+    def post(self, request):
+        serializer = CustomerBookingCreateSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        booking = serializer.save()
+        return Response(
+            {
+                "message": "Booking confirmed successfully.",
+                "booking": CustomerBookingSerializer(booking).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class CustomerBookingListView(AuthenticatedAPIView):
+    def get(self, request):
+        queryset = CustomerBooking.objects.filter(user=request.user)
+        serializer = CustomerBookingSerializer(queryset, many=True)
+        return Response({"count": len(serializer.data), "results": serializer.data}, status=status.HTTP_200_OK)
+
+
 class PartnerBookingRequestView(APIView):
     permission_classes = [AllowAny]
 
@@ -199,19 +244,10 @@ class PartnerBookingRequestView(APIView):
         )
 
 
-class PartnerRequestListView(APIView):
-    permission_classes = [AllowAny]
+class PartnerRequestListView(AuthenticatedAPIView):
 
     def get(self, request):
-        email = request.query_params.get("email", "").strip()
-        if not email:
-            return Response({"detail": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        user_obj = User.objects.filter(email__iexact=email).first()
-        if not user_obj:
-            return Response({"detail": "Partner account not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        partner = getattr(user_obj, "partner_profile", None)
+        partner = getattr(request.user, "partner_profile", None)
         if not partner:
             return Response(
                 {"detail": "Partner profile not found for this account."},
@@ -235,12 +271,17 @@ class PartnerRequestListView(APIView):
         return Response({"count": len(requests_data), "results": requests_data}, status=status.HTTP_200_OK)
 
 
-class PartnerBookingStatusUpdateView(APIView):
-    permission_classes = [AllowAny]
+class PartnerBookingStatusUpdateView(AuthenticatedAPIView):
 
     def post(self, request):
         serializer = PartnerBookingStatusUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        partner = getattr(request.user, "partner_profile", None)
+        if not partner:
+            return Response(
+                {"detail": "Partner profile not found for this account."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         request_id = serializer.validated_data["request_id"]
         action = serializer.validated_data["action"]
@@ -248,6 +289,8 @@ class PartnerBookingStatusUpdateView(APIView):
         booking = PartnerBookingRequest.objects.filter(id=request_id).first()
         if not booking:
             return Response({"detail": "Request not found."}, status=status.HTTP_404_NOT_FOUND)
+        if booking.partner_id != partner.id:
+            return Response({"detail": "You cannot update this request."}, status=status.HTTP_403_FORBIDDEN)
 
         booking.status = (
             PartnerBookingRequest.STATUS_ACCEPTED
@@ -282,3 +325,39 @@ class CustomerBookingStatusView(APIView):
             for booking in PartnerBookingRequest.objects.filter(customer_phone=phone).select_related("partner")
         ]
         return Response({"count": len(requests_data), "results": requests_data}, status=status.HTTP_200_OK)
+
+
+class PartnerServiceOfferingListCreateView(AuthenticatedAPIView):
+    def get_partner(self, request):
+        return getattr(request.user, "partner_profile", None)
+
+    def get(self, request):
+        partner = self.get_partner(request)
+        if not partner:
+            return Response(
+                {"detail": "Partner profile not found for this account."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        queryset = PartnerServiceOffering.objects.filter(partner=partner, is_active=True)
+        serializer = PartnerServiceOfferingSerializer(queryset, many=True)
+        return Response({"count": len(serializer.data), "results": serializer.data}, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        partner = self.get_partner(request)
+        if not partner:
+            return Response(
+                {"detail": "Partner profile not found for this account."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        serializer = PartnerServiceOfferingSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        offering = serializer.save(partner=partner)
+        return Response(
+            {
+                "message": "Service published successfully.",
+                "service": PartnerServiceOfferingSerializer(offering).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )

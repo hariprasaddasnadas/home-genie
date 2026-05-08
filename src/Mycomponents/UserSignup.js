@@ -10,9 +10,13 @@ export default function UserSignup() {
   const [rememberMe, setRememberMe] = useState(false);
   const [username, setUsername] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmitError('');
+    setIsSubmitting(true);
 
     try {
       const response = await fetch(apiUrl('/api/signup/'), {
@@ -35,19 +39,19 @@ export default function UserSignup() {
         localStorage.removeItem('partnerAuth');
         localStorage.setItem('activeAuthType', 'user');
         window.dispatchEvent(new CustomEvent('authChanged'));
-        alert('Signup successful.');
         setUsername('');
         setEmail('');
         setPassword('');
         setConfirmPassword('');
         setRememberMe(false);
-        navigate('/');
+        navigate('/my-bookings');
       } else {
-        const errorText = typeof data === 'object' ? JSON.stringify(data) : 'Signup failed.';
-        alert(errorText);
+        setSubmitError(data.detail || Object.values(data)[0]?.[0] || 'Signup failed.');
       }
     } catch (error) {
-      alert('Could not connect to backend. Please ensure Django server is running.');
+      setSubmitError('Could not connect to backend. Please ensure Django server is running.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -202,9 +206,10 @@ export default function UserSignup() {
                   </Link>
                 </div>
 
-                <button type="submit" className="login-submit-btn">
-                  Sign Up
+                <button type="submit" className="login-submit-btn" disabled={isSubmitting}>
+                  {isSubmitting ? 'Creating account...' : 'Sign Up'}
                 </button>
+                {submitError && <p className="text-danger small mt-3 mb-0">{submitError}</p>}
 
                 <div className="mt-4 text-center">
                   <Link to="/login" className="login-submit-btn text-decoration-none d-flex align-items-center justify-content-center w-100">

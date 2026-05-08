@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { services } from '../data';
+import useCatalogServices from '../useCatalogServices';
 
 const highlights = [
   {
@@ -23,6 +23,7 @@ const highlights = [
 export default function Home({ addToCart, currentPincode, setCurrentPincode }) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const { services } = useCatalogServices();
 
   useEffect(() => {
     const handleOtherSearch = () => setQuery('');

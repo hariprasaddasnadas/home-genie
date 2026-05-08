@@ -18,9 +18,17 @@ import UserSignup from './Mycomponents/UserSignup';
 import PartnerDashboard from './Mycomponents/PartnerDashboard';
 import PartnerLogin from './Mycomponents/PartnerLogin';
 import ServiceConfigModal from './Mycomponents/ServiceConfigModal';
+import MyBookings from './Mycomponents/MyBookings';
 
 function App() {
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const stored = localStorage.getItem('hg-cart');
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      return [];
+    }
+  });
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [currentPincode, setCurrentPincode] = useState('');
   const [modalService, setModalService] = useState(null);
@@ -37,6 +45,10 @@ function App() {
       localStorage.setItem('hg-theme', 'light');
     }
   }, [isDarkMode]);
+
+  useEffect(() => {
+    localStorage.setItem('hg-cart', JSON.stringify(cartItems));
+  }, [cartItems]);
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
@@ -110,6 +122,7 @@ function App() {
           />
           <Route path="/login" element={<UserLogin />} />
           <Route path="/signup" element={<UserSignup />} />
+          <Route path="/my-bookings" element={<MyBookings />} />
           <Route path="/partner/dashboard" element={<PartnerDashboard />} />
           <Route path="/partner/login" element={<PartnerLogin />} />
           <Route path="/partner" element={<PartnerRegistration />} />

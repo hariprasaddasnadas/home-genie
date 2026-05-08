@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { authHeaders, fetchJson, getAuthState } from '../api';
 
 export default function Checkout({ cartItems = [], clearCart, showToast }) {
   const location = useLocation();
@@ -31,6 +32,9 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
   });
 
   const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const authState = getAuthState();
 
   // Load saved address on mount
   useEffect(() => {
@@ -52,20 +56,56 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
     }));
   };
 
-  const handleConfirmOrder = (e) => {
-    e.preventDefault();
-
-    // Store address for next time
-    localStorage.setItem('hg_user_address', JSON.stringify(address));
-
-    // If it was a cart checkout, clear the cart.
-    if (!isSingleCheckout) {
-      clearCart();
+  const submitBooking = async () => {
+    if (!authState.token || authState.role !== 'user') {
+      navigate('/login', { state: { from: '/checkout' } });
+      return;
     }
 
-    // Since Stripe will be integrated later, we do simple success logic.
-    showToast('Your booking has been confirmed successfully!', 'success');
-    navigate('/');
+    setSubmitError('');
+    setIsSubmitting(true);
+    try {
+      for (const item of itemsToCheckout) {
+        const payload = {
+          service_id: item.id,
+          configured_price: parseInt(item.price, 10),
+          config_options: item.configOptions || location.state?.configOptions || {},
+          customer_name: address.fullName,
+          customer_phone: address.phone,
+          street: address.street,
+          city: address.city,
+          pincode: address.pincode,
+          payment_method: paymentMethod,
+        };
+
+        const { response, data } = await fetchJson('/api/bookings/', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          setSubmitError(data.detail || Object.values(data)[0]?.[0] || 'Could not confirm your booking.');
+          return;
+        }
+      }
+
+      localStorage.setItem('hg_user_address', JSON.stringify(address));
+      if (!isSingleCheckout) {
+        clearCart();
+      }
+      showToast('Your booking has been confirmed successfully!', 'success');
+      navigate('/my-bookings');
+    } catch (error) {
+      setSubmitError('Could not connect to backend. Please ensure Django server is running.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFormSubmit = async (event) => {
+    event.preventDefault();
+    await submitBooking();
   };
 
   if (itemsToCheckout.length === 0) {
@@ -90,7 +130,7 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
             <h4 className="fw-bold mb-4 border-bottom pb-2 text-dark">
               <i className="bi bi-geo-alt-fill text-muted me-2"></i> Service Address
             </h4>
-            <form id="checkout-form" onSubmit={handleConfirmOrder}>
+            <form id="checkout-form" onSubmit={handleFormSubmit}>
               <div className="row g-3">
                 <div className="col-md-6">
                   <label className="form-label fw-semibold small text-muted">Full Name</label>
@@ -113,6 +153,7 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
                   <input type="text" className="form-control" name="pincode" value={address.pincode} onChange={handleAddressChange} required />
                 </div>
               </div>
+              {submitError && <p className="text-danger small mt-3 mb-0">{submitError}</p>}
             </form>
           </div>
 
@@ -185,10 +226,11 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
             <button 
               type="submit" 
               form="checkout-form"
+              disabled={isSubmitting}
               className="btn-book w-100 py-3 rounded-4 shadow-sm fs-6" 
               style={{ background: '#6a38c2', color: 'white' }}
             >
-              Confirm Booking
+              {isSubmitting ? 'Confirming...' : 'Confirm Booking'}
             </button>
             <p className="text-center text-muted small mt-3 mb-0">By confirming, you agree to our terms of service.</p>
           </div>

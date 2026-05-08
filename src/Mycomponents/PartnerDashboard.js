@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { apiUrl } from '../api';
+import { useNavigate } from 'react-router-dom';
+import { authHeaders, fetchJson, getAuthState } from '../api';
 
 const initialProfile = {
   partnerName: 'Rahul Services Hub',
@@ -10,18 +11,8 @@ const initialProfile = {
   pincode: '560001',
 };
 
-const initialServices = [
-  {
-    id: 1,
-    title: 'Split AC Installation',
-    image:
-      'https://images.pexels.com/photos/5691624/pexels-photo-5691624.jpeg?auto=compress&cs=tinysrgb&w=800',
-    price: '799',
-    description: 'Professional AC installation with wall mount setup, wiring check, and clean finish.',
-  },
-];
-
 export default function PartnerDashboard() {
+  const navigate = useNavigate();
   const getProfileFromStorage = () => {
     try {
       const stored = localStorage.getItem('partnerAuth');
@@ -45,17 +36,20 @@ export default function PartnerDashboard() {
   };
 
   const [profile] = useState(getProfileFromStorage);
-  const [services, setServices] = useState(initialServices);
+  const [services, setServices] = useState([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState('');
   const [requestActionLoadingId, setRequestActionLoadingId] = useState(null);
+  const [submitMessage, setSubmitMessage] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     image: '',
     price: '',
     description: '',
   });
+  const authState = getAuthState();
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -65,38 +59,65 @@ export default function PartnerDashboard() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const fetchPartnerServices = async () => {
+    try {
+      setServicesLoading(true);
+      const { response, data } = await fetchJson('/api/partner/services/', {
+        headers: authHeaders(),
+      });
+      if (!response.ok) {
+        setRequestsError(data.detail || 'Could not load your services.');
+        return;
+      }
+      setServices(data.results || []);
+    } catch (error) {
+      setRequestsError('Could not load your services.');
+    } finally {
+      setServicesLoading(false);
+    }
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmitMessage('');
+    setRequestsError('');
 
-    const newService = {
-      id: Date.now(),
-      title: formData.title,
-      image: formData.image,
-      price: formData.price,
-      description: formData.description,
-    };
+    try {
+      const { response, data } = await fetchJson('/api/partner/services/', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          title: formData.title,
+          image: formData.image,
+          price: parseInt(formData.price, 10),
+          description: formData.description,
+        }),
+      });
+      if (!response.ok) {
+        setRequestsError(data.detail || Object.values(data)[0]?.[0] || 'Could not publish service.');
+        return;
+      }
 
-    setServices((current) => [newService, ...current]);
-    setFormData({
-      title: '',
-      image: '',
-      price: '',
-      description: '',
-    });
+      setSubmitMessage('Service published successfully.');
+      setFormData({
+        title: '',
+        image: '',
+        price: '',
+        description: '',
+      });
+      await fetchPartnerServices();
+    } catch (error) {
+      setRequestsError('Could not publish service.');
+    }
   };
 
   const fetchPartnerRequests = async () => {
       try {
-        const stored = localStorage.getItem('partnerAuth');
-        if (!stored) return;
-        const parsed = JSON.parse(stored);
-        const email = parsed?.user?.email;
-        if (!email) return;
-
         setRequestsLoading(true);
         setRequestsError('');
-        const response = await fetch(apiUrl(`/api/partner/requests/?email=${encodeURIComponent(email)}`));
-        const data = await response.json();
+        const { response, data } = await fetchJson('/api/partner/requests/', {
+          headers: authHeaders(),
+        });
         if (!response.ok) {
           setRequestsError(data.detail || 'Could not load customer requests.');
           return;
@@ -110,18 +131,22 @@ export default function PartnerDashboard() {
     };
 
   useEffect(() => {
+    if (authState.role !== 'partner' || !authState.token) {
+      navigate('/partner/login');
+      return;
+    }
+    fetchPartnerServices();
     fetchPartnerRequests();
-  }, []);
+  }, [authState.role, authState.token, navigate]);
 
   const updateRequestStatus = async (requestId, action) => {
     setRequestActionLoadingId(requestId);
     try {
-      const response = await fetch(apiUrl('/api/partner/request-action/'), {
+      const { response, data } = await fetchJson('/api/partner/request-action/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ request_id: requestId, action }),
       });
-      const data = await response.json();
       if (!response.ok) {
         setRequestsError(data.detail || 'Could not update request status.');
         return;
@@ -265,6 +290,7 @@ export default function PartnerDashboard() {
                 <button type="submit" className="partner-submit">
                   Publish service
                 </button>
+                {submitMessage && <p className="text-success small mt-3 mb-0">{submitMessage}</p>}
               </form>
             </section>
           </div>
@@ -284,25 +310,31 @@ export default function PartnerDashboard() {
               </div>
             </div>
 
-            <div className="services-grid services-grid--page">
-              {services.map((service) => (
-                <article className="service-card" key={service.id}>
-                  <img src={service.image} alt={service.title} />
-                  <div className="service-card-body">
-                    <span className="service-tag">Partner listing</span>
-                    <div className="service-topline">
-                      <span className="service-rating">
-                        <i className="bi bi-person-workspace"></i>
-                        {profile.category}
-                      </span>
-                      <span className="service-price">Rs. {service.price}</span>
+            {servicesLoading ? (
+              <p className="content-copy mb-0">Loading your services...</p>
+            ) : services.length === 0 ? (
+              <p className="content-copy mb-0">No services published yet. Add your first service above.</p>
+            ) : (
+              <div className="services-grid services-grid--page">
+                {services.map((service) => (
+                  <article className="service-card" key={service.id}>
+                    <img src={service.image} alt={service.title} />
+                    <div className="service-card-body">
+                      <span className="service-tag">Partner listing</span>
+                      <div className="service-topline">
+                        <span className="service-rating">
+                          <i className="bi bi-person-workspace"></i>
+                          {profile.category}
+                        </span>
+                        <span className="service-price">Rs. {service.price}</span>
+                      </div>
+                      <h3>{service.title}</h3>
+                      <p>{service.description}</p>
                     </div>
-                    <h3>{service.title}</h3>
-                    <p>{service.description}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
 
           <section className="partner-listings-section mt-4">

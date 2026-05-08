@@ -1,8 +1,13 @@
 from django.contrib.auth.models import User
 from django.db import transaction
 from rest_framework import serializers
-from .models import PartnerProfile
-from .models import PartnerBookingRequest
+from .models import (
+    CustomerBooking,
+    PartnerBookingRequest,
+    PartnerProfile,
+    PartnerServiceOffering,
+    ServiceCatalog,
+)
 
 
 class SignUpSerializer(serializers.Serializer):
@@ -70,6 +75,124 @@ class PartnerBookingRequestSerializer(serializers.Serializer):
 class PartnerBookingStatusUpdateSerializer(serializers.Serializer):
     request_id = serializers.IntegerField()
     action = serializers.ChoiceField(choices=["accept", "decline"])
+
+
+class ServiceCatalogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceCatalog
+        fields = [
+            "id",
+            "slug",
+            "name",
+            "price",
+            "rating",
+            "description",
+            "image",
+            "keywords",
+            "details",
+            "duration",
+            "category",
+            "available_pincodes",
+            "questions",
+            "is_active",
+        ]
+
+
+class PartnerServiceOfferingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PartnerServiceOffering
+        fields = [
+            "id",
+            "title",
+            "image",
+            "price",
+            "description",
+            "is_active",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at", "is_active"]
+
+
+class CustomerBookingCreateSerializer(serializers.Serializer):
+    service_id = serializers.IntegerField()
+    configured_price = serializers.IntegerField(min_value=1)
+    config_options = serializers.JSONField(required=False)
+    customer_name = serializers.CharField(max_length=120)
+    customer_phone = serializers.CharField(max_length=20)
+    street = serializers.CharField(max_length=255)
+    city = serializers.CharField(max_length=100)
+    pincode = serializers.CharField(max_length=10)
+    payment_method = serializers.ChoiceField(choices=CustomerBooking.PAYMENT_CHOICES)
+
+    def validate_service_id(self, value):
+        if not ServiceCatalog.objects.filter(id=value, is_active=True).exists():
+            raise serializers.ValidationError("Selected service is not available.")
+        return value
+
+    def validate_customer_phone(self, value):
+        digits = "".join(ch for ch in value if ch.isdigit())
+        if len(digits) < 10:
+            raise serializers.ValidationError("Please enter a valid phone number.")
+        return digits
+
+    def validate_pincode(self, value):
+        digits = "".join(ch for ch in value if ch.isdigit())
+        if len(digits) < 6:
+            raise serializers.ValidationError("Please enter a valid pincode.")
+        return digits
+
+    def validate(self, attrs):
+        service = ServiceCatalog.objects.get(id=attrs["service_id"])
+        available_pincodes = service.available_pincodes or []
+        if available_pincodes and attrs["pincode"] not in available_pincodes:
+            raise serializers.ValidationError(
+                {"pincode": "This service is not available in the selected pincode yet."}
+            )
+        attrs["service"] = service
+        return attrs
+
+    def create(self, validated_data):
+        service = validated_data["service"]
+        user = self.context["request"].user
+        return CustomerBooking.objects.create(
+            user=user,
+            service=service,
+            service_name=service.name,
+            service_slug=service.slug,
+            service_image=service.image,
+            service_category=service.category,
+            configured_price=validated_data["configured_price"],
+            config_options=validated_data.get("config_options", {}),
+            customer_name=validated_data["customer_name"],
+            customer_phone=validated_data["customer_phone"],
+            street=validated_data["street"],
+            city=validated_data["city"],
+            pincode=validated_data["pincode"],
+            payment_method=validated_data["payment_method"],
+            status=CustomerBooking.STATUS_CONFIRMED,
+        )
+
+
+class CustomerBookingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerBooking
+        fields = [
+            "id",
+            "service_name",
+            "service_slug",
+            "service_image",
+            "service_category",
+            "configured_price",
+            "config_options",
+            "customer_name",
+            "customer_phone",
+            "street",
+            "city",
+            "pincode",
+            "payment_method",
+            "status",
+            "created_at",
+        ]
 
 
 class PartnerSignUpSerializer(serializers.Serializer):

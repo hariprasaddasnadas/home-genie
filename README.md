@@ -1,70 +1,85 @@
-# Getting Started with Create React App
+# HomeGenie
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+HomeGenie is a home-services marketplace with a React frontend and a Django REST backend.
 
-## Available Scripts
+## What works now
 
-In the project directory, you can run:
+- User signup and login with token-based authentication
+- Partner signup and login with token-based authentication
+- Service catalog API backed by the Django database
+- Customer checkout that creates real saved bookings
+- Customer "My Bookings" page
+- Partner dashboard with saved partner services
+- Partner request inbox with authenticated accept/decline actions
 
-### `npm start`
+## Project structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- `src/` - React frontend
+- `backend/` - Django backend and API
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Frontend setup
 
-### `npm test`
+```bash
+npm install
+npm start
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+The frontend runs on `http://localhost:3000`.
 
-### `npm run build`
+## Backend setup
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Install Python dependencies:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```bash
+python -m pip install -r backend/requirements.txt
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Run migrations:
 
-### `npm run eject`
+```bash
+python backend/manage.py migrate
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Start the backend:
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+python backend/manage.py runserver
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+The backend runs on `http://127.0.0.1:8000`.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Environment variables
 
-## Learn More
+Optional backend environment variables:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- `DJANGO_SECRET_KEY`
+- `DJANGO_DEBUG`
+- `DJANGO_ALLOWED_HOSTS`
+- `DJANGO_CORS_ALLOWED_ORIGINS`
+- `DATABASE_URL`
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Optional frontend environment variables:
 
-### Code Splitting
+- `REACT_APP_API_BASE_URL`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Important routes
 
-### Analyzing the Bundle Size
+- `/` - Home page
+- `/services` - Services and partner search
+- `/checkout` - Customer checkout
+- `/my-bookings` - Customer booking history
+- `/partner` - Partner signup
+- `/partner/login` - Partner login
+- `/partner/dashboard` - Partner dashboard
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Admin access
 
-### Making a Progressive Web App
+Create an admin user:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```bash
+python backend/manage.py createsuperuser
+```
 
-### Advanced Configuration
+Then open:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+`http://127.0.0.1:8000/admin/`

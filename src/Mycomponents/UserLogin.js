@@ -1,16 +1,22 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiUrl } from '../api';
 
 export default function UserLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const redirectPath = location.state?.from || '/my-bookings';
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmitError('');
+    setIsSubmitting(true);
 
     try {
       const response = await fetch(apiUrl('/api/login/'), {
@@ -31,14 +37,14 @@ export default function UserLogin() {
         localStorage.removeItem('partnerAuth');
         localStorage.setItem('activeAuthType', 'user');
         window.dispatchEvent(new CustomEvent('authChanged'));
-        alert('Login successful.');
-        navigate('/');
+        navigate(redirectPath);
       } else {
-        const errorText = typeof data === 'object' ? JSON.stringify(data) : 'Login failed.';
-        alert(errorText);
+        setSubmitError(data.detail || Object.values(data)[0]?.[0] || 'Login failed.');
       }
     } catch (error) {
-      alert('Could not connect to backend. Please ensure Django server is running.');
+      setSubmitError('Could not connect to backend. Please ensure Django server is running.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -163,8 +169,10 @@ export default function UserLogin() {
                   </Link>
                 </div>
 
-                <button type="submit" className="login-submit-btn">
-                  Login
+                {submitError && <p className="text-danger small mb-3">{submitError}</p>}
+
+                <button type="submit" className="login-submit-btn" disabled={isSubmitting}>
+                  {isSubmitting ? 'Logging in...' : 'Login'}
                 </button>
               </form>
 
