@@ -96,7 +96,8 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
   };
 
   const bookingItemsPayload = itemsToCheckout.map((item) => ({
-    service_id: item.id,
+    service_id: item.request_id ? undefined : item.id,
+    partner_request_id: item.request_id,
     configured_price: parseInt(item.price, 10),
     config_options: item.configOptions || location.state?.configOptions || {},
   }));
@@ -123,7 +124,8 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
     try {
       for (const item of itemsToCheckout) {
         const payload = {
-          service_id: item.id,
+          service_id: item.request_id ? undefined : item.id,
+          partner_request_id: item.request_id,
           configured_price: parseInt(item.price, 10),
           config_options: item.configOptions || location.state?.configOptions || {},
           ...bookingCustomerPayload,

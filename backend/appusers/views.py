@@ -7,6 +7,8 @@ from urllib import error, request as urllib_request
 
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
+from django.core.mail import send_mail
+from django.conf import settings
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -486,6 +488,27 @@ class PartnerBookingStatusUpdateView(AuthenticatedAPIView):
             else PartnerBookingRequest.STATUS_DECLINED
         )
         booking.save(update_fields=["status"])
+
+        if booking.customer_email:
+            subject = f"Your HomeGenie Request has been {booking.status.capitalize()}"
+            message = (
+                f"Hello {booking.customer_name},\n\n"
+                f"Your request for {booking.partner.get_service_type_display()} has been {booking.status}.\n"
+                f"Partner Name: {booking.partner.full_name}\n"
+                f"Partner Phone: {booking.partner.phone}\n\n"
+                "Thank you for using HomeGenie!"
+            )
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@homegenie.com',
+                    [booking.customer_email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                print(f"Failed to send email: {e}")
+
         return Response(
             {"message": f"Request {booking.status}.", "status": booking.status},
             status=status.HTTP_200_OK,
@@ -506,6 +529,8 @@ class CustomerBookingStatusView(APIView):
                 "partner_name": booking.partner.full_name,
                 "partner_phone": booking.partner.phone,
                 "service_type": booking.partner.get_service_type_display(),
+                "service_name": booking.service_name or booking.partner.get_service_type_display(),
+                "service_price": booking.service_price,
                 "preferred_time": booking.preferred_time,
                 "status": booking.status,
                 "created_at": booking.created_at,

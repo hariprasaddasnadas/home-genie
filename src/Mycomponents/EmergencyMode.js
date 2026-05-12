@@ -172,17 +172,10 @@ export default function EmergencyMode({ addToCart, currentPincode }) {
                       <div className="d-flex flex-column gap-2 mt-3">
                         <button
                           type="button"
-                          className="btn-cart"
-                          onClick={() => addToCart(service)}
+                          className="btn-book w-100"
+                          onClick={() => navigate(`/services?service=${service.slug}${currentPincode ? `&pincode=${currentPincode}` : ''}`)}
                         >
-                          Add to cart
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-book"
-                          onClick={() => navigate('/checkout', { state: { service, emergency: true } })}
-                        >
-                          Book emergency service
+                          View in area
                         </button>
                       </div>
                     </div>

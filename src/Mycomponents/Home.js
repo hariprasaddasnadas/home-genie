@@ -297,10 +297,7 @@ export default function Home({ addToCart, currentPincode, setCurrentPincode }) {
                   <h3>{service.name}</h3>
                   <p>{service.description}</p>
                   <div className="d-flex flex-column gap-2 mt-auto">
-                    <button type="button" className="btn-cart" onClick={() => addToCart(service)}>
-                      Add to cart
-                    </button>
-                    <button type="button" className="btn-book" onClick={() => navigate(`/services?service=${service.slug}${currentPincode ? `&pincode=${currentPincode}` : ''}`)}>
+                    <button type="button" className="btn-book w-100" onClick={() => navigate(`/services?service=${service.slug}${currentPincode ? `&pincode=${currentPincode}` : ''}`)}>
                       View in area
                     </button>
                   </div>

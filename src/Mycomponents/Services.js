@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import ServiceConfigModal from './ServiceConfigModal';
 import { apiUrl } from '../api';
 import useCatalogServices from '../useCatalogServices';
 
@@ -17,6 +16,7 @@ export default function Services({ currentPincode }) {
   const [bookingMessage, setBookingMessage] = useState('');
   const [bookingForm, setBookingForm] = useState({
     customerName: '',
+    customerEmail: '',
     customerPhone: '',
     customerAddress: '',
     issueDetails: '',
@@ -68,7 +68,7 @@ export default function Services({ currentPincode }) {
       )
       : true;
     const matchesPincode = selectedPincode
-      ? service.availablePincodes.includes(selectedPincode)
+      ? (service.availablePincodes || []).includes(selectedPincode)
       : true;
 
     return matchesService && matchesSearch && matchesPincode;
@@ -148,10 +148,13 @@ export default function Services({ currentPincode }) {
         body: JSON.stringify({
           partner_id: partnerId,
           customer_name: bookingForm.customerName,
+          customer_email: bookingForm.customerEmail,
           customer_phone: bookingForm.customerPhone,
           customer_address: bookingForm.customerAddress,
           issue_details: bookingForm.issueDetails,
           preferred_time: bookingForm.preferredTime,
+          service_name: selectedServiceData ? selectedServiceData.name : '',
+          service_price: selectedServiceData ? selectedServiceData.price : 299,
         }),
       });
       const data = await response.json();
@@ -160,8 +163,10 @@ export default function Services({ currentPincode }) {
         return;
       }
       setBookingMessage('Request sent successfully. Partner will contact you soon.');
+      localStorage.setItem('hg_last_phone', bookingForm.customerPhone);
       setBookingForm({
         customerName: '',
+        customerEmail: '',
         customerPhone: '',
         customerAddress: '',
         issueDetails: '',
@@ -273,6 +278,15 @@ export default function Services({ currentPincode }) {
                               className="form-control mb-2"
                               placeholder="Your name"
                               value={bookingForm.customerName}
+                              onChange={handleBookingChange}
+                              required
+                            />
+                            <input
+                              type="email"
+                              name="customerEmail"
+                              className="form-control mb-2"
+                              placeholder="Your email (for confirmation)"
+                              value={bookingForm.customerEmail}
                               onChange={handleBookingChange}
                               required
                             />
@@ -393,13 +407,12 @@ export default function Services({ currentPincode }) {
                     <div className="service-actions">
                       <button
                         type="button" 
-                        onClick={() => { setActiveService(service); setIsModalOpen(true); }} 
+                        onClick={() => navigate(`/services?service=${service.slug}${currentPincode ? `&pincode=${currentPincode}` : ''}`)}
                         className="btn-book text-center w-100 border-0"
                         style={{ background: '#6a38c2', color: '#fff', padding: '10px', borderRadius: '8px', fontWeight: 'bold' }}
                       >
-                        Book now
+                        View in area
                       </button>
-                      {/* <span className="service-link-text">{service.details}</span> */}
                     </div>
                   </div>
                 </article>
@@ -412,17 +425,6 @@ export default function Services({ currentPincode }) {
           )}
         </div>
       </section>
-      {isModalOpen && (
-        <ServiceConfigModal
-          service={activeService}
-          onClose={() => setIsModalOpen(false)}
-          actionText="Checkout"
-          onAction={(answers) => {
-            setIsModalOpen(false);
-            navigate('/checkout', { state: { service: activeService, configOptions: answers } });
-          }}
-        />
-      )}
     </main>
   );
 }

@@ -79,19 +79,24 @@ class PartnerBookingRequest(models.Model):
     STATUS_PENDING = "pending"
     STATUS_ACCEPTED = "accepted"
     STATUS_DECLINED = "declined"
+    STATUS_PAID = "paid"
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
         (STATUS_ACCEPTED, "Accepted"),
         (STATUS_DECLINED, "Declined"),
+        (STATUS_PAID, "Paid / Confirmed"),
     ]
 
     partner = models.ForeignKey(
         PartnerProfile, on_delete=models.CASCADE, related_name="booking_requests"
     )
     customer_name = models.CharField(max_length=120)
+    customer_email = models.EmailField(blank=True)
     customer_phone = models.CharField(max_length=20)
     customer_address = models.CharField(max_length=255)
     issue_details = models.TextField(blank=True)
+    service_name = models.CharField(max_length=120, blank=True)
+    service_price = models.PositiveIntegerField(default=299)
     preferred_time = models.CharField(max_length=120, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -8,7 +8,6 @@ const EMPTY_AUTH_STATE = { role: null, username: '', email: '', token: '' };
 
 export default function Header({
   cartCount = 0,
-  addToCart,
   isDarkMode,
   toggleTheme,
   currentPincode,
@@ -16,6 +15,7 @@ export default function Header({
 }) {
   const [query, setQuery] = useState('');
   const [isLoginMenuOpen, setIsLoginMenuOpen] = useState(false);
+  const [isSignupMenuOpen, setIsSignupMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const [authState, setAuthState] = useState(getAuthState);
@@ -30,13 +30,14 @@ export default function Header({
   useEffect(() => {
     const handleDocumentClick = () => {
       setIsLoginMenuOpen(false);
+      setIsSignupMenuOpen(false);
       setIsProfileMenuOpen(false);
     };
-    if (isLoginMenuOpen || isProfileMenuOpen) {
+    if (isLoginMenuOpen || isSignupMenuOpen || isProfileMenuOpen) {
       document.addEventListener('click', handleDocumentClick);
     }
     return () => document.removeEventListener('click', handleDocumentClick);
-  }, [isLoginMenuOpen, isProfileMenuOpen]);
+  }, [isLoginMenuOpen, isSignupMenuOpen, isProfileMenuOpen]);
 
   useEffect(() => {
     const syncAuthState = () => setAuthState(getAuthState());
@@ -94,8 +95,18 @@ export default function Header({
                   inputMode="numeric"
                   placeholder="Enter pincode"
                   maxLength="6"
-                  value={currentPincode}
+                  value={currentPincode || ''}
                   onChange={(event) => setCurrentPincode(event.target.value.replace(/\D/g, ''))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const params = new URLSearchParams();
+                      if (query.trim()) params.set('search', query.trim());
+                      if (currentPincode) params.set('pincode', currentPincode);
+                      navigate(`/services${params.toString() ? `?${params.toString()}` : ''}`);
+                      setQuery('');
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -107,12 +118,22 @@ export default function Header({
                   id="header-search"
                   type="text"
                   placeholder="AC repair, home cleaning..."
-                  value={query}
+                  value={query || ''}
                   onChange={(event) => {
                     setQuery(event.target.value);
                     window.dispatchEvent(new CustomEvent('headerSearchActive'));
                   }}
                   onFocus={() => window.dispatchEvent(new CustomEvent('headerSearchActive'))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const params = new URLSearchParams();
+                      if (query.trim()) params.set('search', query.trim());
+                      if (currentPincode) params.set('pincode', currentPincode);
+                      navigate(`/services${params.toString() ? `?${params.toString()}` : ''}`);
+                      setQuery('');
+                    }
+                  }}
                   autoComplete="off"
                 />
               </div>
@@ -180,6 +201,15 @@ export default function Header({
           </div>
 
           <div className="header-actions align-items-center">
+            <Link to="/cart" className="position-relative d-flex align-items-center me-3 text-decoration-none" style={{ color: '#14213d' }}>
+              <i className="bi bi-cart3 fs-4"></i>
+              {cartCount > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.65rem' }}>
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+
             <button
               type="button"
               onClick={toggleTheme}
@@ -198,26 +228,16 @@ export default function Header({
               )}
             </button>
 
-            <Link to="/cart" className="cart-wrapper text-decoration-none text-dark position-relative mx-3 d-flex align-items-center">
-              <i className="bi bi-cart3 fs-4" style={{ color: '#14213d' }}></i>
-              <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.65rem' }}>
-                {cartCount}
-                <span className="visually-hidden">products in cart</span>
-              </span>
-            </Link>
-
             {authState.role ? (
-              <div
-                className="profile-menu-wrapper ms-1"
-                onMouseEnter={() => setIsProfileMenuOpen(true)}
-                onMouseLeave={() => setIsProfileMenuOpen(false)}
-              >
+              <div className="profile-menu-wrapper ms-1">
                 <button
                   type="button"
                   className="profile-trigger"
                   onClick={(event) => {
                     event.stopPropagation();
                     setIsProfileMenuOpen((prev) => !prev);
+                    setIsLoginMenuOpen(false);
+                    setIsSignupMenuOpen(false);
                   }}
                   aria-expanded={isProfileMenuOpen}
                   aria-haspopup="menu"
@@ -262,9 +282,55 @@ export default function Header({
               </div>
             ) : (
               <>
-                <Link to="/signup" className="btn-login border-0 rounded-4 d-inline-flex align-items-center justify-content-center text-decoration-none fw-semibold ms-1 me-2" style={{ fontSize: '0.95rem' }}>
-                  Sign Up
-                </Link>
+                <div className="login-menu-wrapper ms-1 me-2">
+                  <button
+                    type="button"
+                    className="btn-login border-0 rounded-4 d-inline-flex align-items-center gap-2"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setIsSignupMenuOpen((prev) => !prev);
+                      setIsLoginMenuOpen(false);
+                    }}
+                    aria-expanded={isSignupMenuOpen}
+                    aria-haspopup="menu"
+                  >
+                    Sign Up
+                    <i className={`bi ${isSignupMenuOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
+                  </button>
+
+                  {isSignupMenuOpen && (
+                    <div
+                      className="login-menu-dropdown"
+                      role="menu"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        className="login-menu-item"
+                        role="menuitem"
+                        onClick={() => {
+                          setIsSignupMenuOpen(false);
+                          navigate('/signup');
+                        }}
+                      >
+                        <i className="bi bi-person-plus"></i>
+                        User sign up
+                      </button>
+                      <button
+                        type="button"
+                        className="login-menu-item"
+                        role="menuitem"
+                        onClick={() => {
+                          setIsSignupMenuOpen(false);
+                          navigate('/partner');
+                        }}
+                      >
+                        <i className="bi bi-briefcase"></i>
+                        Partner sign up
+                      </button>
+                    </div>
+                  )}
+                </div>
 
                 <div className="login-menu-wrapper ms-1">
                   <button
@@ -273,6 +339,7 @@ export default function Header({
                     onClick={(event) => {
                       event.stopPropagation();
                       setIsLoginMenuOpen((prev) => !prev);
+                      setIsSignupMenuOpen(false);
                     }}
                     aria-expanded={isLoginMenuOpen}
                     aria-haspopup="menu"
