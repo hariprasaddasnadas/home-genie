@@ -17,7 +17,6 @@ import UserLogin from './Mycomponents/UserLogin';
 import UserSignup from './Mycomponents/UserSignup';
 import PartnerDashboard from './Mycomponents/PartnerDashboard';
 import PartnerLogin from './Mycomponents/PartnerLogin';
-import ServiceConfigModal from './Mycomponents/ServiceConfigModal';
 import MyBookings from './Mycomponents/MyBookings';
 import ProtectedRoute from './Mycomponents/ProtectedRoute';
 import { fetchJson } from './api';

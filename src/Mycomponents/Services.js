@@ -7,8 +7,6 @@ export default function Services({ currentPincode }) {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { services } = useCatalogServices();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeService, setActiveService] = useState(null);
   const [partners, setPartners] = useState([]);
   const [partnersLoading, setPartnersLoading] = useState(false);
   const [activePartnerForm, setActivePartnerForm] = useState(null);
