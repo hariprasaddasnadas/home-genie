@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authHeaders, fetchJson, getAuthState } from '../api';
+import { authHeaders, fetchJson, getAuthState, extractApiError, apiUrl } from '../api';
 
 const initialProfile = {
   partnerName: 'Rahul Services Hub',
@@ -29,13 +29,14 @@ export default function PartnerDashboard() {
         phone: partner.phone ? `+91 ${partner.phone}` : initialProfile.phone,
         category: partner.service_type || initialProfile.category,
         pincode: partner.pincode || initialProfile.pincode,
+        isActive: partner.is_active_partner !== undefined ? partner.is_active_partner : true,
       };
     } catch (error) {
       return initialProfile;
     }
   };
 
-  const [profile] = useState(getProfileFromStorage);
+  const [profile, setProfile] = useState(getProfileFromStorage);
   const [services, setServices] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [requests, setRequests] = useState([]);
@@ -45,18 +46,25 @@ export default function PartnerDashboard() {
   const [submitMessage, setSubmitMessage] = useState('');
   const [formData, setFormData] = useState({
     title: '',
-    image: '',
+    image: null,
     price: '',
     description: '',
   });
   const authState = getAuthState();
 
   const handleChange = (event) => {
-    const { name, value } = event.target;
-    setFormData((current) => ({
-      ...current,
-      [name]: name === 'price' ? value.replace(/[^\d]/g, '') : value,
-    }));
+    const { name, value, files } = event.target;
+    if (name === 'image') {
+      setFormData((current) => ({
+        ...current,
+        image: files ? files[0] : null,
+      }));
+    } else {
+      setFormData((current) => ({
+        ...current,
+        [name]: name === 'price' ? value.replace(/[^\d]/g, '') : value,
+      }));
+    }
   };
 
   const fetchPartnerServices = async () => {
@@ -83,28 +91,37 @@ export default function PartnerDashboard() {
     setRequestsError('');
 
     try {
-      const { response, data } = await fetchJson('/api/partner/services/', {
+      const payload = new FormData();
+      payload.append('title', formData.title);
+      if (formData.image) {
+        payload.append('image', formData.image);
+      }
+      payload.append('price', parseInt(formData.price, 10));
+      payload.append('description', formData.description);
+
+      const headers = authHeaders();
+      delete headers['Content-Type']; // Let browser set multipart boundary
+
+      const response = await fetch(apiUrl('/api/partner/services/'), {
         method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({
-          title: formData.title,
-          image: formData.image,
-          price: parseInt(formData.price, 10),
-          description: formData.description,
-        }),
+        headers: headers,
+        body: payload,
       });
+      const data = await response.json();
+      
       if (!response.ok) {
-        setRequestsError(data.detail || Object.values(data)[0]?.[0] || 'Could not publish service.');
+        setRequestsError(extractApiError(data, 'Could not publish service.'));
         return;
       }
 
       setSubmitMessage('Service published successfully.');
       setFormData({
         title: '',
-        image: '',
+        image: null,
         price: '',
         description: '',
       });
+      document.getElementById('serviceImage').value = '';
       await fetchPartnerServices();
     } catch (error) {
       setRequestsError('Could not publish service.');
@@ -138,6 +155,27 @@ export default function PartnerDashboard() {
     fetchPartnerServices();
     fetchPartnerRequests();
   }, [authState.role, authState.token, navigate]);
+
+  const toggleAvailability = async () => {
+    try {
+      const { response, data } = await fetchJson('/api/partner/availability/', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ is_active_partner: !profile.isActive }),
+      });
+      if (response.ok) {
+        setProfile((prev) => ({ ...prev, isActive: data.is_active_partner }));
+        const stored = localStorage.getItem('partnerAuth');
+        if (stored) {
+           const parsed = JSON.parse(stored);
+           if (parsed.partner_profile) {
+              parsed.partner_profile.is_active_partner = data.is_active_partner;
+              localStorage.setItem('partnerAuth', JSON.stringify(parsed));
+           }
+        }
+      }
+    } catch (e) {}
+  };
 
   const updateRequestStatus = async (requestId, action) => {
     setRequestActionLoadingId(requestId);
@@ -210,6 +248,15 @@ export default function PartnerDashboard() {
                   <span>Base pincode</span>
                   <strong>{profile.pincode}</strong>
                 </div>
+                <div className="partner-account-item">
+                  <span>Availability</span>
+                  <strong>
+                    <div className="form-check form-switch d-inline-block">
+                      <input className="form-check-input cursor-pointer" type="checkbox" checked={profile.isActive} onChange={toggleAvailability} />
+                      <label className="form-check-label ms-2">{profile.isActive ? 'Available' : 'Unavailable'}</label>
+                    </div>
+                  </strong>
+                </div>
               </div>
             </section>
 
@@ -242,15 +289,14 @@ export default function PartnerDashboard() {
 
                 <div className="mb-3">
                   <label className="form-label fw-semibold small" htmlFor="serviceImage">
-                    Service image URL
+                    Service image
                   </label>
                   <input
                     id="serviceImage"
-                    type="url"
+                    type="file"
                     className="form-control"
                     name="image"
-                    placeholder="Paste image URL"
-                    value={formData.image}
+                    accept="image/*"
                     onChange={handleChange}
                     required
                   />
@@ -361,7 +407,14 @@ export default function PartnerDashboard() {
                 {requests.map((request) => (
                   <article className="service-card" key={request.id}>
                     <div className="service-card-body">
-                      <span className="service-tag">Status: {request.status || 'pending'}</span>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <span className="service-tag mb-0">Status: {request.status || 'pending'}</span>
+                        {request.is_priority && (
+                          <span className="badge bg-danger text-white px-2 py-1 rounded" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
+                            PRIORITY DISPATCH
+                          </span>
+                        )}
+                      </div>
                       <h3>{request.customer_name}</h3>
                       <p className="mb-1"><strong>Phone:</strong> +91 {request.customer_phone}</p>
                       <p className="mb-1"><strong>Address:</strong> {request.customer_address}</p>
@@ -386,6 +439,19 @@ export default function PartnerDashboard() {
                             onClick={() => updateRequestStatus(request.id, 'decline')}
                           >
                             Decline
+                          </button>
+                        </div>
+                      )}
+                      {(request.status === 'accepted' || request.status === 'paid') && (
+                        <div className="d-flex gap-2 mb-2">
+                          <button
+                            type="button"
+                            className="btn-book text-center border-0"
+                            style={{ background: '#0dcaf0', color: '#000', padding: '8px 12px', borderRadius: '8px', fontWeight: 'bold' }}
+                            disabled={requestActionLoadingId === request.id}
+                            onClick={() => updateRequestStatus(request.id, 'work_done')}
+                          >
+                            Work Done
                           </button>
                         </div>
                       )}

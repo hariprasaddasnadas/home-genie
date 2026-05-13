@@ -236,7 +236,7 @@ class PartnerListView(APIView):
         pincode = request.query_params.get("pincode", "").strip()
         service_type = request.query_params.get("service_type", "").strip()
 
-        queryset = PartnerProfile.objects.filter(is_active_partner=True)
+        queryset = PartnerProfile.objects.all()
         if pincode:
             queryset = queryset.filter(pincode=pincode)
         if service_type:
@@ -252,8 +252,10 @@ class PartnerListView(APIView):
                 "service_type": partner.service_type,
                 "service_type_display": partner.get_service_type_display(),
                 "experience_years": partner.experience_years,
+                "is_active_partner": partner.is_active_partner,
+                "offerings": PartnerServiceOfferingSerializer(partner.service_offerings.filter(is_active=True), many=True, context={"request": request}).data,
             }
-            for partner in queryset.select_related("user")
+            for partner in queryset.prefetch_related("service_offerings").select_related("user")
         ]
 
         return Response({"count": len(partners), "results": partners}, status=status.HTTP_200_OK)
@@ -453,6 +455,7 @@ class PartnerRequestListView(AuthenticatedAPIView):
                 "issue_details": booking.issue_details,
                 "preferred_time": booking.preferred_time,
                 "status": booking.status,
+                "is_priority": booking.is_priority,
                 "created_at": booking.created_at,
             }
             for booking in PartnerBookingRequest.objects.filter(partner=partner)
@@ -466,6 +469,59 @@ class PartnerBookingStatusUpdateView(AuthenticatedAPIView):
     def post(self, request):
         serializer = PartnerBookingStatusUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        partner = getattr(request.user, "partner_profile", None)
+        if not partner:
+            return Response(
+                {"detail": "Partner profile not found for this account."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        request_id = serializer.validated_data["request_id"]
+        action = serializer.validated_data["action"]
+
+        booking = PartnerBookingRequest.objects.filter(id=request_id).first()
+        if not booking:
+            return Response({"detail": "Request not found."}, status=status.HTTP_404_NOT_FOUND)
+        if booking.partner_id != partner.id:
+            return Response({"detail": "You cannot update this request."}, status=status.HTTP_403_FORBIDDEN)
+
+        if action == "accept":
+            booking.status = PartnerBookingRequest.STATUS_ACCEPTED
+        elif action == "decline":
+            booking.status = PartnerBookingRequest.STATUS_DECLINED
+        elif action == "work_done":
+            booking.status = PartnerBookingRequest.STATUS_COMPLETED
+            # Also update linked CustomerBooking if it exists
+            CustomerBooking.objects.filter(partner_request=booking).update(status=CustomerBooking.STATUS_COMPLETED)
+
+        booking.save(update_fields=["status"])
+
+        if booking.customer_email:
+            subject = f"Your HomeGenie Request has been {booking.status.capitalize()}"
+            message = (
+                f"Hello {booking.customer_name},\n\n"
+                f"Your request for {booking.partner.get_service_type_display()} has been {booking.status}.\n"
+                f"Partner Name: {booking.partner.full_name}\n"
+                f"Partner Phone: {booking.partner.phone}\n\n"
+                "Thank you for using HomeGenie!"
+            )
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL if hasattr(settings, 'DEFAULT_FROM_EMAIL') else 'noreply@homegenie.com',
+                    [booking.customer_email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                print(f"Failed to send email: {e}")
+
+        return Response(
+            {"message": f"Request {booking.status}.", "status": booking.status},
+            status=status.HTTP_200_OK,
+        )
+
+
         partner = getattr(request.user, "partner_profile", None)
         if not partner:
             return Response(
@@ -528,6 +584,7 @@ class CustomerBookingStatusView(APIView):
                 "id": booking.id,
                 "partner_name": booking.partner.full_name,
                 "partner_phone": booking.partner.phone,
+                "partner_pincode": booking.partner.pincode,
                 "service_type": booking.partner.get_service_type_display(),
                 "service_name": booking.service_name or booking.partner.get_service_type_display(),
                 "service_price": booking.service_price,
@@ -553,7 +610,7 @@ class PartnerServiceOfferingListCreateView(AuthenticatedAPIView):
             )
 
         queryset = PartnerServiceOffering.objects.filter(partner=partner, is_active=True)
-        serializer = PartnerServiceOfferingSerializer(queryset, many=True)
+        serializer = PartnerServiceOfferingSerializer(queryset, many=True, context={"request": request})
         return Response({"count": len(serializer.data), "results": serializer.data}, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -564,13 +621,33 @@ class PartnerServiceOfferingListCreateView(AuthenticatedAPIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        serializer = PartnerServiceOfferingSerializer(data=request.data)
+        serializer = PartnerServiceOfferingSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         offering = serializer.save(partner=partner)
         return Response(
             {
                 "message": "Service published successfully.",
-                "service": PartnerServiceOfferingSerializer(offering).data,
+                "service": PartnerServiceOfferingSerializer(offering, context={"request": request}).data,
             },
             status=status.HTTP_201_CREATED,
+        )
+
+class PartnerAvailabilityToggleView(AuthenticatedAPIView):
+    def post(self, request):
+        partner = getattr(request.user, "partner_profile", None)
+        if not partner:
+            return Response(
+                {"detail": "Partner profile not found for this account."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        is_active = request.data.get("is_active_partner")
+        if is_active is not None:
+            partner.is_active_partner = bool(is_active)
+            partner.save(update_fields=["is_active_partner"])
+        return Response(
+            {
+                "message": "Availability updated successfully.",
+                "is_active_partner": partner.is_active_partner,
+            },
+            status=status.HTTP_200_OK,
         )

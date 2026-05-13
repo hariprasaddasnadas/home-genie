@@ -204,15 +204,15 @@ export default function Home({ addToCart, currentPincode, setCurrentPincode }) {
                       </div>
                     </div>
 
-                    <Link to="/emergency" className="hero-feature-item emergency-item hero-feature-link">
+                    <div className="hero-feature-item emergency-item">
                       <div className="hero-feature-icon emergency">
                         <i className="bi bi-exclamation-octagon-fill"></i>
                       </div>
                       <div>
-                        <h4>Emergency Mode</h4>
+                        <h4>Emergency Priority</h4>
                         <p>Priority matching for urgent electrical, plumbing, and AC issues.</p>
                       </div>
-                    </Link>
+                    </div>
 
                     <div className="hero-feature-item">
                       <div className="hero-feature-icon">

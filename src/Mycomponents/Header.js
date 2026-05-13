@@ -75,7 +75,7 @@ export default function Header({
       <header className="hg-header sticky-top">
       <div className="container py-3">
         <div className="header-shell">
-          <Link className="brand-lockup text-decoration-none" to="/">
+          <Link className="brand-lockup text-decoration-none" to={authState.role === 'partner' ? '/partner/dashboard' : '/'}>
             <span className="brand-mark">
               <i className="bi bi-stars" aria-hidden="true"></i>
             </span>
@@ -199,9 +199,23 @@ export default function Header({
               </div>
             )}
           </div>
+          
+          <nav className="d-none d-xl-flex align-items-center gap-2 ms-auto me-2">
+            {authState.role === 'partner' ? (
+              <Link to="/partner/dashboard" className="nav-link-custom text-decoration-none">Dashboard</Link>
+            ) : (
+              <>
+                <Link to="/" className="nav-link-custom text-decoration-none">Home</Link>
+                <Link to="/services" className="nav-link-custom text-decoration-none">Services</Link>
+                {authState.role === 'user' && (
+                  <Link to="/my-bookings" className="nav-link-custom text-decoration-none">My Bookings</Link>
+                )}
+              </>
+            )}
+          </nav>
 
           <div className="header-actions align-items-center">
-            <Link to="/cart" className="position-relative d-flex align-items-center me-3 text-decoration-none" style={{ color: '#14213d' }}>
+            <Link to="/cart" className="cart-wrapper position-relative d-flex align-items-center me-3 text-decoration-none">
               <i className="bi bi-cart3 fs-4"></i>
               {cartCount > 0 && (
                 <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '0.65rem' }}>
@@ -388,6 +402,39 @@ export default function Header({
       </div>
     </header>
 
+    {/* Mobile Bottom Navigation */}
+    <nav className="mobile-nav d-flex d-xl-none">
+      <Link to={authState.role === 'partner' ? '/partner/dashboard' : '/'} className="mobile-nav-item">
+        <i className={`bi ${authState.role === 'partner' ? 'bi-speedometer2' : 'bi-house-heart'}`}></i>
+        <span>{authState.role === 'partner' ? 'Dashboard' : 'Home'}</span>
+      </Link>
+      {authState.role !== 'partner' && (
+        <Link to="/services" className="mobile-nav-item">
+          <i className="bi bi-grid-fill"></i>
+          <span>Services</span>
+        </Link>
+      )}
+      <Link to="/cart" className="mobile-nav-item position-relative">
+        <i className="bi bi-cart-fill"></i>
+        <span>Cart</span>
+        {cartCount > 0 && (
+          <span className="position-absolute top-0 start-50 ms-2 badge rounded-pill bg-danger" style={{ fontSize: '0.6rem' }}>
+            {cartCount}
+          </span>
+        )}
+      </Link>
+      {authState.role ? (
+        <Link to={authState.role === 'partner' ? '/partner/dashboard' : '/my-bookings'} className="mobile-nav-item">
+          <i className={`bi ${authState.role === 'partner' ? 'bi-person-badge-fill' : 'bi-bag-check-fill'}`}></i>
+          <span>{authState.role === 'partner' ? 'Profile' : 'Bookings'}</span>
+        </Link>
+      ) : (
+        <Link to="/login" className="mobile-nav-item">
+          <i className="bi bi-person-circle"></i>
+          <span>Login</span>
+        </Link>
+      )}
+    </nav>
     </>
   );
 }

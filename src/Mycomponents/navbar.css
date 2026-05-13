@@ -7,7 +7,7 @@
 
 .header-shell {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: 1.25rem;
 }
@@ -101,6 +101,10 @@
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.cart-wrapper {
+  color: #14213d;
 }
 
 .nav-link-custom {
@@ -384,8 +388,7 @@ body.dark-mode .login-menu-item:hover {
   color: #c4b5fd;
 }
 
-body.dark-mode .cart-wrapper i,
-body.dark-mode .cart-wrapper span {
+body.dark-mode .cart-wrapper {
   color: #f8fafc !important;
 }
 

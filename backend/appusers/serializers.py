@@ -52,6 +52,7 @@ class PartnerBookingRequestSerializer(serializers.Serializer):
     preferred_time = serializers.CharField(max_length=120, required=False, allow_blank=True)
     service_name = serializers.CharField(max_length=120, required=False, allow_blank=True)
     service_price = serializers.IntegerField(required=False)
+    is_priority = serializers.BooleanField(required=False, default=False)
 
     def validate_partner_id(self, value):
         if not PartnerProfile.objects.filter(id=value, is_active_partner=True).exists():
@@ -70,12 +71,13 @@ class PartnerBookingRequestSerializer(serializers.Serializer):
             preferred_time=validated_data.get("preferred_time", ""),
             service_name=validated_data.get("service_name", ""),
             service_price=validated_data.get("service_price", 299),
+            is_priority=validated_data.get("is_priority", False),
         )
 
 
 class PartnerBookingStatusUpdateSerializer(serializers.Serializer):
     request_id = serializers.IntegerField()
-    action = serializers.ChoiceField(choices=["accept", "decline"])
+    action = serializers.ChoiceField(choices=["accept", "decline", "work_done"])
 
 
 class ServiceCatalogSerializer(serializers.ModelSerializer):
@@ -146,6 +148,12 @@ class CustomerBookingCreateSerializer(serializers.Serializer):
     def validate(self, attrs):
         service_id = attrs.get("service_id")
         service = ServiceCatalog.objects.get(id=service_id) if service_id else None
+        partner_request_id = attrs.get("partner_request_id")
+        partner_request = PartnerBookingRequest.objects.get(id=partner_request_id) if partner_request_id else None
+        
+        if not service and not partner_request:
+            raise serializers.ValidationError("Either service_id or partner_request_id must be provided.")
+
         if service:
             available_pincodes = service.available_pincodes or []
             if available_pincodes and attrs["pincode"] not in available_pincodes:
@@ -176,18 +184,27 @@ class CustomerBookingCreateSerializer(serializers.Serializer):
                     }
                 )
         attrs["service"] = service
+        attrs["partner_request"] = partner_request
         return attrs
 
     def create(self, validated_data):
-        service = validated_data["service"]
+        service = validated_data.get("service")
+        partner_request = validated_data.get("partner_request")
         user = self.context["request"].user
+        
+        service_name = service.name if service else (partner_request.service_name or partner_request.partner.get_service_type_display())
+        service_slug = service.slug if service else f"partner-request-{partner_request.id}"
+        service_image = service.image if service else ""
+        service_category = service.category if service else partner_request.partner.get_service_type_display()
+
         booking = CustomerBooking.objects.create(
             user=user,
             service=service,
-            service_name=service.name,
-            service_slug=service.slug,
-            service_image=service.image,
-            service_category=service.category,
+            partner_request=partner_request,
+            service_name=service_name,
+            service_slug=service_slug,
+            service_image=service_image,
+            service_category=service_category,
             configured_price=validated_data["configured_price"],
             config_options=validated_data.get("config_options", {}),
             customer_name=validated_data["customer_name"],
@@ -227,6 +244,8 @@ class CheckoutItemSerializer(serializers.Serializer):
     def validate(self, attrs):
         service_id = attrs.get("service_id")
         attrs["service"] = ServiceCatalog.objects.get(id=service_id) if service_id else None
+        partner_request_id = attrs.get("partner_request_id")
+        attrs["partner_request"] = PartnerBookingRequest.objects.get(id=partner_request_id) if partner_request_id else None
         return attrs
 
 
@@ -290,14 +309,21 @@ class RazorpayPaymentVerifySerializer(serializers.Serializer):
 def create_pending_online_bookings(*, user, validated_data, checkout_group, gateway_order_id):
     bookings = []
     for item in validated_data["items"]:
-        service = item["service"]
+        service = item.get("service")
+        partner_request = item.get("partner_request")
+        
+        service_name = service.name if service else (partner_request.service_name or partner_request.partner.get_service_type_display())
+        service_slug = service.slug if service else f"partner-request-{partner_request.id}"
+        service_image = service.image if service else ""
+        service_category = service.category if service else partner_request.partner.get_service_type_display()
+
         booking = CustomerBooking.objects.create(
             user=user,
             service=service,
-            service_name=service.name,
-            service_slug=service.slug,
-            service_image=service.image,
-            service_category=service.category,
+            service_name=service_name,
+            service_slug=service_slug,
+            service_image=service_image,
+            service_category=service_category,
             configured_price=item["configured_price"],
             config_options=item.get("config_options", {}),
             customer_name=validated_data["customer_name"],

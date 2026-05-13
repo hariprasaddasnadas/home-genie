@@ -12,14 +12,14 @@ import About from './Mycomponents/About';
 import Contact from './Mycomponents/Contact';
 import FAQ from './Mycomponents/FAQ';
 import Services from './Mycomponents/Services';
-import EmergencyMode from './Mycomponents/EmergencyMode';
+
 import UserLogin from './Mycomponents/UserLogin';
 import UserSignup from './Mycomponents/UserSignup';
 import PartnerDashboard from './Mycomponents/PartnerDashboard';
 import PartnerLogin from './Mycomponents/PartnerLogin';
 import MyBookings from './Mycomponents/MyBookings';
 import ProtectedRoute from './Mycomponents/ProtectedRoute';
-import { fetchJson } from './api';
+import { fetchJson, getAuthState } from './api';
 
 function App() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -28,6 +28,7 @@ function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('hg-theme') === 'dark';
   });
+  const notifiedRequestsRef = React.useRef([]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -41,6 +42,12 @@ function App() {
 
   useEffect(() => {
     const fetchAccepted = async () => {
+      const authState = getAuthState();
+      if (!authState.token || authState.role !== 'user') {
+        setAcceptedRequests([]);
+        return;
+      }
+      
       const phone = localStorage.getItem('hg_last_phone');
       if (!phone) return;
       try {
@@ -52,8 +59,18 @@ function App() {
             name: r.service_name || r.service_type,
             price: r.service_price || 299,
             description: `Partner: ${r.partner_name} (${r.partner_phone})`,
+            partner_pincode: r.partner_pincode,
             image: 'https://images.pexels.com/photos/6474475/pexels-photo-6474475.jpeg?auto=compress&cs=tinysrgb&w=200'
           }));
+
+          // Notify user about newly accepted requests
+          accepted.forEach(req => {
+            if (!notifiedRequestsRef.current.includes(req.id)) {
+              showToast(`Your request for ${req.name} has been accepted!`, 'success');
+              notifiedRequestsRef.current.push(req.id);
+            }
+          });
+
           setAcceptedRequests(accepted);
         }
       } catch (e) {}
@@ -96,7 +113,14 @@ function App() {
               />
             }
           />
-          <Route path="/cart" element={<Cart cartItems={acceptedRequests} removeFromCart={removeFromCart} />} />
+          <Route 
+            path="/cart" 
+            element={(
+              <ProtectedRoute allow="user" redirectTo="/login">
+                <Cart cartItems={acceptedRequests} removeFromCart={removeFromCart} />
+              </ProtectedRoute>
+            )} 
+          />
           <Route
             path="/checkout"
             element={
@@ -109,10 +133,7 @@ function App() {
           <Route path="/services" element={<Services currentPincode={currentPincode} />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/faq" element={<FAQ />} />
-          <Route
-            path="/emergency"
-            element={<EmergencyMode currentPincode={currentPincode} />}
-          />
+
           <Route path="/login" element={<UserLogin />} />
           <Route path="/signup" element={<UserSignup />} />
           <Route

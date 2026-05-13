@@ -38,7 +38,7 @@ class ServiceCatalog(models.Model):
     price = models.PositiveIntegerField()
     rating = models.DecimalField(max_digits=2, decimal_places=1, default=4.5)
     description = models.TextField()
-    image = models.URLField()
+    image = models.URLField(max_length=500)
     keywords = models.JSONField(default=list, blank=True)
     details = models.TextField(blank=True)
     duration = models.CharField(max_length=80, blank=True)
@@ -61,7 +61,7 @@ class PartnerServiceOffering(models.Model):
         PartnerProfile, on_delete=models.CASCADE, related_name="service_offerings"
     )
     title = models.CharField(max_length=120)
-    image = models.URLField()
+    image = models.ImageField(upload_to="service_images/", blank=True, null=True)
     price = models.PositiveIntegerField()
     description = models.TextField()
     is_active = models.BooleanField(default=True)
@@ -80,11 +80,13 @@ class PartnerBookingRequest(models.Model):
     STATUS_ACCEPTED = "accepted"
     STATUS_DECLINED = "declined"
     STATUS_PAID = "paid"
+    STATUS_COMPLETED = "completed"
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
         (STATUS_ACCEPTED, "Accepted"),
         (STATUS_DECLINED, "Declined"),
         (STATUS_PAID, "Paid / Confirmed"),
+        (STATUS_COMPLETED, "Completed"),
     ]
 
     partner = models.ForeignKey(
@@ -99,6 +101,7 @@ class PartnerBookingRequest(models.Model):
     service_price = models.PositiveIntegerField(default=299)
     preferred_time = models.CharField(max_length=120, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    is_priority = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -153,7 +156,7 @@ class CustomerBooking(models.Model):
     )
     service_name = models.CharField(max_length=120)
     service_slug = models.SlugField(blank=True)
-    service_image = models.URLField(blank=True)
+    service_image = models.URLField(max_length=500, blank=True)
     service_category = models.CharField(max_length=80, blank=True)
     configured_price = models.PositiveIntegerField()
     config_options = models.JSONField(default=dict, blank=True)
@@ -174,6 +177,13 @@ class CustomerBooking(models.Model):
     gateway_order_id = models.CharField(max_length=80, blank=True, db_index=True)
     gateway_payment_id = models.CharField(max_length=80, blank=True)
     gateway_signature = models.CharField(max_length=255, blank=True)
+    partner_request = models.ForeignKey(
+        PartnerBookingRequest,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="confirmed_bookings",
+    )
     status = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default=STATUS_CONFIRMED
     )

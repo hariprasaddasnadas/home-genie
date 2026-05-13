@@ -10,6 +10,7 @@ export default function Services({ currentPincode }) {
   const [partners, setPartners] = useState([]);
   const [partnersLoading, setPartnersLoading] = useState(false);
   const [activePartnerForm, setActivePartnerForm] = useState(null);
+  const [activeOfferingForm, setActiveOfferingForm] = useState(null);
   const [bookingLoadingId, setBookingLoadingId] = useState(null);
   const [bookingMessage, setBookingMessage] = useState('');
   const [bookingForm, setBookingForm] = useState({
@@ -19,6 +20,7 @@ export default function Services({ currentPincode }) {
     customerAddress: '',
     issueDetails: '',
     preferredTime: '',
+    isPriority: false,
   });
   const [statusPhone, setStatusPhone] = useState('');
   const [statusResults, setStatusResults] = useState([]);
@@ -128,17 +130,17 @@ export default function Services({ currentPincode }) {
   const shouldHideCatalogServices = Boolean(activePartnerServiceType && filteredPartners.length > 0);
 
   const handleBookingChange = (event) => {
-    const { name, value } = event.target;
+    const { name, value, type, checked } = event.target;
     setBookingForm((current) => ({
       ...current,
-      [name]: name === 'customerPhone' ? value.replace(/\D/g, '') : value,
+      [name]: type === 'checkbox' ? checked : (name === 'customerPhone' ? value.replace(/\D/g, '') : value),
     }));
   };
 
-  const submitPartnerBooking = async (event, partnerId) => {
+  const submitPartnerBooking = async (event, partnerId, offering = null) => {
     event.preventDefault();
     setBookingMessage('');
-    setBookingLoadingId(partnerId);
+    setBookingLoadingId(offering ? `offering-${offering.id}` : partnerId);
     try {
       const response = await fetch(apiUrl('/api/partner/book/'), {
         method: 'POST',
@@ -149,10 +151,11 @@ export default function Services({ currentPincode }) {
           customer_email: bookingForm.customerEmail,
           customer_phone: bookingForm.customerPhone,
           customer_address: bookingForm.customerAddress,
-          issue_details: bookingForm.issueDetails,
+          issue_details: offering ? offering.description : bookingForm.issueDetails,
           preferred_time: bookingForm.preferredTime,
-          service_name: selectedServiceData ? selectedServiceData.name : '',
-          service_price: selectedServiceData ? selectedServiceData.price : 299,
+          service_name: offering ? offering.title : (selectedServiceData ? selectedServiceData.name : ''),
+          service_price: offering ? offering.price : (selectedServiceData ? selectedServiceData.price : 299),
+          is_priority: bookingForm.isPriority,
         }),
       });
       const data = await response.json();
@@ -169,8 +172,10 @@ export default function Services({ currentPincode }) {
         customerAddress: '',
         issueDetails: '',
         preferredTime: '',
+        isPriority: false,
       });
       setActivePartnerForm(null);
+      setActiveOfferingForm(null);
     } catch (error) {
       setBookingMessage('Backend not reachable. Please try again.');
     } finally {
@@ -241,7 +246,13 @@ export default function Services({ currentPincode }) {
                   {filteredPartners.map((partner) => (
                     <article className="service-card" key={partner.id}>
                       <div className="service-card-body">
-                        <span className="service-tag">Verified partner</span>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <span className="service-tag mb-0">Verified partner</span>
+                          <span className="small fw-semibold" style={{ color: partner.is_active_partner ? '#198754' : '#dc3545' }}>
+                            <span className="d-inline-block rounded-circle me-1" style={{ width: '8px', height: '8px', backgroundColor: partner.is_active_partner ? '#198754' : '#dc3545' }}></span>
+                            {partner.is_active_partner ? 'Available' : 'Unavailable'}
+                          </span>
+                        </div>
                         <div className="service-topline">
                           <span className="service-rating">
                             <i className="bi bi-briefcase-fill"></i>
@@ -254,85 +265,205 @@ export default function Services({ currentPincode }) {
                           Service area: {partner.pincode}
                           {partner.city ? `, ${partner.city}` : ''}
                         </p>
-                        <p className="service-extra">Phone: +91 {partner.phone}</p>
-                        <div className="service-actions">
-                          <button
-                            type="button"
-                            className="btn-book text-center w-100 border-0"
-                            style={{ background: '#14213d', color: '#fff', padding: '10px', borderRadius: '8px', fontWeight: 'bold' }}
-                            onClick={() => {
-                              setBookingMessage('');
-                              setActivePartnerForm(activePartnerForm === partner.id ? null : partner.id);
-                            }}
-                          >
-                            {activePartnerForm === partner.id ? 'Close request form' : 'Request this partner'}
-                          </button>
-                        </div>
-                        {activePartnerForm === partner.id && (
-                          <form className="mt-3" onSubmit={(event) => submitPartnerBooking(event, partner.id)}>
-                            <input
-                              type="text"
-                              name="customerName"
-                              className="form-control mb-2"
-                              placeholder="Your name"
-                              value={bookingForm.customerName}
-                              onChange={handleBookingChange}
-                              required
-                            />
-                            <input
-                              type="email"
-                              name="customerEmail"
-                              className="form-control mb-2"
-                              placeholder="Your email (for confirmation)"
-                              value={bookingForm.customerEmail}
-                              onChange={handleBookingChange}
-                              required
-                            />
-                            <input
-                              type="text"
-                              name="customerPhone"
-                              className="form-control mb-2"
-                              placeholder="Your phone"
-                              maxLength="10"
-                              value={bookingForm.customerPhone}
-                              onChange={handleBookingChange}
-                              required
-                            />
-                            <input
-                              type="text"
-                              name="customerAddress"
-                              className="form-control mb-2"
-                              placeholder="Service address"
-                              value={bookingForm.customerAddress}
-                              onChange={handleBookingChange}
-                              required
-                            />
-                            <textarea
-                              name="issueDetails"
-                              className="form-control mb-2"
-                              placeholder="What service do you need?"
-                              value={bookingForm.issueDetails}
-                              onChange={handleBookingChange}
-                              rows={3}
-                            />
-                            <input
-                              type="text"
-                              name="preferredTime"
-                              className="form-control mb-2"
-                              placeholder="Preferred time (e.g. Today 6 PM)"
-                              value={bookingForm.preferredTime}
-                              onChange={handleBookingChange}
-                              required
-                            />
-                            <button
-                              type="submit"
-                              className="btn-book text-center w-100 border-0"
-                              style={{ background: '#6a38c2', color: '#fff', padding: '10px', borderRadius: '8px', fontWeight: 'bold' }}
-                              disabled={bookingLoadingId === partner.id}
-                            >
-                              {bookingLoadingId === partner.id ? 'Sending request...' : 'Send request'}
-                            </button>
-                          </form>
+                        <p className="service-extra mb-3">Phone: +91 {partner.phone}</p>
+
+                        {partner.offerings && partner.offerings.length > 0 && (
+                          <div className="mb-3">
+                            <h6 className="fw-bold small mb-2 text-muted text-uppercase">Partner's Services</h6>
+                            <div className="d-flex flex-column gap-2">
+                              {partner.offerings.map(offering => (
+                                <div key={offering.id}>
+                                  <div 
+                                    className="d-flex align-items-center p-2 rounded cursor-pointer" 
+                                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}
+                                    onClick={() => {
+                                      setBookingMessage('');
+                                      setActivePartnerForm(null);
+                                      setActiveOfferingForm(activeOfferingForm === offering.id ? null : offering.id);
+                                    }}
+                                  >
+                                    {offering.image && (
+                                      <img src={offering.image} alt={offering.title} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px', marginRight: '12px' }} />
+                                    )}
+                                    <div className="flex-grow-1">
+                                      <strong className="d-block small text-white">{offering.title}</strong>
+                                      <span className="small" style={{ color: '#aaa' }}>Rs. {offering.price}</span>
+                                    </div>
+                                    <i className={`bi ${activeOfferingForm === offering.id ? 'bi-chevron-up' : 'bi-chevron-down'} text-muted`}></i>
+                                  </div>
+
+                                  {activeOfferingForm === offering.id && (
+                                    <form className="mt-2 p-3 rounded" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)' }} onSubmit={(event) => submitPartnerBooking(event, partner.id, offering)}>
+                                      <input
+                                        type="text"
+                                        name="customerName"
+                                        className="form-control mb-2"
+                                        placeholder="Your name"
+                                        value={bookingForm.customerName}
+                                        onChange={handleBookingChange}
+                                        required
+                                      />
+                                      <input
+                                        type="text"
+                                        name="customerPhone"
+                                        className="form-control mb-2"
+                                        placeholder="Your phone"
+                                        maxLength="10"
+                                        value={bookingForm.customerPhone}
+                                        onChange={handleBookingChange}
+                                        required
+                                      />
+                                      <input
+                                        type="text"
+                                        name="customerAddress"
+                                        className="form-control mb-2"
+                                        placeholder="Service address"
+                                        value={bookingForm.customerAddress}
+                                        onChange={handleBookingChange}
+                                        required
+                                      />
+                                      <select
+                                        name="preferredTime"
+                                        className="form-select mb-3 form-control"
+                                        value={bookingForm.preferredTime}
+                                        onChange={handleBookingChange}
+                                        required
+                                      >
+                                        <option value="">Select preferred time</option>
+                                        <option value="Morning (9 AM - 12 PM)">Morning (9 AM - 12 PM)</option>
+                                        <option value="Afternoon (12 PM - 3 PM)">Afternoon (12 PM - 3 PM)</option>
+                                        <option value="Late Afternoon (3 PM - 6 PM)">Late Afternoon (3 PM - 6 PM)</option>
+                                        <option value="Evening (6 PM - 9 PM)">Evening (6 PM - 9 PM)</option>
+                                      </select>
+                                      <div className="form-check mb-3 mt-2">
+                                        <input 
+                                          className="form-check-input" 
+                                          type="checkbox" 
+                                          name="isPriority"
+                                          id={`priorityCheck-offering-${offering.id}`}
+                                          checked={bookingForm.isPriority}
+                                          onChange={handleBookingChange}
+                                        />
+                                        <label className="form-check-label small fw-bold text-danger" htmlFor={`priorityCheck-offering-${offering.id}`} style={{ cursor: 'pointer' }}>
+                                          Emergency (Priority dispatch)
+                                        </label>
+                                      </div>
+                                      <button
+                                        type="submit"
+                                        className="btn-book text-center w-100 border-0"
+                                        style={{ background: '#6a38c2', color: '#fff', padding: '10px', borderRadius: '8px', fontWeight: 'bold' }}
+                                        disabled={bookingLoadingId === `offering-${offering.id}`}
+                                      >
+                                        {bookingLoadingId === `offering-${offering.id}` ? 'Sending request...' : 'Request this service'}
+                                      </button>
+                                    </form>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {(!partner.offerings || partner.offerings.length === 0) && (
+                          <>
+                            <div className="service-actions">
+                              <button
+                                type="button"
+                                className="btn-book text-center w-100 border-0"
+                                style={{ background: '#14213d', color: '#fff', padding: '10px', borderRadius: '8px', fontWeight: 'bold' }}
+                                onClick={() => {
+                                  setBookingMessage('');
+                                  setActiveOfferingForm(null);
+                                  setActivePartnerForm(activePartnerForm === partner.id ? null : partner.id);
+                                }}
+                              >
+                                {activePartnerForm === partner.id ? 'Close request form' : 'Request this partner'}
+                              </button>
+                            </div>
+                            {activePartnerForm === partner.id && (
+                              <form className="mt-3" onSubmit={(event) => submitPartnerBooking(event, partner.id)}>
+                                <input
+                                  type="text"
+                                  name="customerName"
+                                  className="form-control mb-2"
+                                  placeholder="Your name"
+                                  value={bookingForm.customerName}
+                                  onChange={handleBookingChange}
+                                  required
+                                />
+                                <input
+                                  type="email"
+                                  name="customerEmail"
+                                  className="form-control mb-2"
+                                  placeholder="Your email (for confirmation)"
+                                  value={bookingForm.customerEmail}
+                                  onChange={handleBookingChange}
+                                  required
+                                />
+                                <input
+                                  type="text"
+                                  name="customerPhone"
+                                  className="form-control mb-2"
+                                  placeholder="Your phone"
+                                  maxLength="10"
+                                  value={bookingForm.customerPhone}
+                                  onChange={handleBookingChange}
+                                  required
+                                />
+                                <input
+                                  type="text"
+                                  name="customerAddress"
+                                  className="form-control mb-2"
+                                  placeholder="Service address"
+                                  value={bookingForm.customerAddress}
+                                  onChange={handleBookingChange}
+                                  required
+                                />
+                                <textarea
+                                  name="issueDetails"
+                                  className="form-control mb-2"
+                                  placeholder="What service do you need?"
+                                  value={bookingForm.issueDetails}
+                                  onChange={handleBookingChange}
+                                  rows={3}
+                                />
+                                <select
+                                  name="preferredTime"
+                                  className="form-select mb-3 form-control"
+                                  value={bookingForm.preferredTime}
+                                  onChange={handleBookingChange}
+                                  required
+                                >
+                                  <option value="">Select preferred time</option>
+                                  <option value="Morning (9 AM - 12 PM)">Morning (9 AM - 12 PM)</option>
+                                  <option value="Afternoon (12 PM - 3 PM)">Afternoon (12 PM - 3 PM)</option>
+                                  <option value="Late Afternoon (3 PM - 6 PM)">Late Afternoon (3 PM - 6 PM)</option>
+                                  <option value="Evening (6 PM - 9 PM)">Evening (6 PM - 9 PM)</option>
+                                </select>
+                                <div className="form-check mb-3 mt-2">
+                                  <input 
+                                    className="form-check-input" 
+                                    type="checkbox" 
+                                    name="isPriority"
+                                    id={`priorityCheck-partner-${partner.id}`}
+                                    checked={bookingForm.isPriority}
+                                    onChange={handleBookingChange}
+                                  />
+                                  <label className="form-check-label small fw-bold text-danger" htmlFor={`priorityCheck-partner-${partner.id}`} style={{ cursor: 'pointer' }}>
+                                    Emergency (Priority dispatch)
+                                  </label>
+                                </div>
+                                <button
+                                  type="submit"
+                                  className="btn-book text-center w-100 border-0"
+                                  style={{ background: '#6a38c2', color: '#fff', padding: '10px', borderRadius: '8px', fontWeight: 'bold' }}
+                                  disabled={bookingLoadingId === partner.id}
+                                >
+                                  {bookingLoadingId === partner.id ? 'Sending request...' : 'Send request'}
+                                </button>
+                              </form>
+                            )}
+                          </>
                         )}
                       </div>
                     </article>

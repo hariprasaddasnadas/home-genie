@@ -91,6 +91,18 @@ export default function Checkout({ cartItems = [], clearCart, showToast }) {
     if (!address.street.trim()) nextErrors.street = 'Please enter your street or area.';
     if (!address.city.trim()) nextErrors.city = 'Please enter your city.';
     if (!/^\d{6}$/.test(address.pincode)) nextErrors.pincode = 'Pincode must be exactly 6 digits.';
+    
+    if (Object.keys(nextErrors).length === 0) {
+      // Cross-check with partner pincodes
+      for (const item of itemsToCheckout) {
+        if (item.partner_pincode && item.partner_pincode !== address.pincode) {
+          showToast(`Pincode mismatch! The service from ${item.description?.split('Partner: ')[1] || 'the partner'} is only available in ${item.partner_pincode}.`, 'danger');
+          nextErrors.pincode = `Must be ${item.partner_pincode} for this service.`;
+          break;
+        }
+      }
+    }
+
     setFieldErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
